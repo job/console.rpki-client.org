@@ -80,7 +80,7 @@ td {
 </tr>
 EOF
 
-# roas
+# Start processing ROAs
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.roa' -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
@@ -120,7 +120,9 @@ echo -n R
 } &
 done
 
-# manifests 
+echo "</table><i>Generated on $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i>" >> $1/roas.html
+
+# Start processing manifests
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.mft' -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
