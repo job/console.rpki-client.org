@@ -35,7 +35,7 @@ RUN=$(/usr/bin/time rpki-client -vjco 2>&1 >/dev/zero)
 # first we hook up the /etc/rpki/*.tal files to index.html
 # step one is to extract the URI of the RPKI Root certificate
 # with 'test-tal -v', then use 'test-cert -v' pointed to the
-# locally cached certificate file to extract the SIA.
+# locally cached certificate file to extract the SKI.
 # rpki-client earlier on downloaded all files from the rsync
 # servers, so all URIs in the rpki output are also locally
 # in /var/cache/rpki-client
@@ -43,10 +43,10 @@ RUN=$(/usr/bin/time rpki-client -vjco 2>&1 >/dev/zero)
 # also on disk as /var/cache/rpki-client/rpki.afrinic.net/repository/AfriNIC.cer
 for i in /etc/rpki/*.tal; do
 	TA=$(test-cert -vt $(test-tal -v $i | grep 'URI: rsync' | awk -F// '{ print "/var/cache/rpki-client/" $2 }' ) $i | sed 's/OK//')
-	SIA=$(echo "${TA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
+	SKI=$(echo "${TA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	MFT=$(echo "${TA}" | fgrep -m1 'Manifest:' | awk -F// '{ print $2 }')
-	echo "<a href=\"./$SIA.html\">$SIA</a> $i" >> tal-mapping.txt
-cat << EOF > $1/${SIA%${SIA#??}}/${SIA}.html
+	echo "<a href=\"./$SKI.html\">$SKI</a> $i" >> tal-mapping.txt
+cat << EOF > $1/${SKI%${SKI#??}}/${SKI}.html
 <a href="./roas.html"><img border=0 src="rpki_console.gif" /></a>
 <pre>
 <strong>RPKI Root Certificate</strong>
@@ -92,7 +92,7 @@ td {
 </style>
 <table>
 <tr>
-<th>SIA</th>
+<th>SKI</th>
 <th style="width: 20%;">asID</th>
 <th>Prefixes</th>
 </tr>
@@ -112,13 +112,13 @@ for i in $(find * -type f -name '*.roa' -print); do
 	fi
 	{
 	ROA=$(test-roa -v ${i} | sed 's/OK//')
-	SIA=$(echo "${ROA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
+	SKI=$(echo "${ROA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	AKI=$(echo "${ROA}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
 	ASID=$(echo "${ROA}" | fgrep -m1 'asID:' | awk '{ print $NF }')
-	echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
+	echo "$SKI $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
 	cat << EOF >> $1/roas.html
 <tr>
-<td valign="top"><pre><a href="./${SIA}.html">${SIA}</a></pre></td>
+<td valign="top"><pre><a href="./${SKI}.html">${SKI}</a></pre></td>
 <td valign="top" style="text-align:center;"><pre>AS${ASID}</pre></td>
 <td>
 <pre>
@@ -128,7 +128,7 @@ $(echo "${ROA}" | fgrep 'max: ')
 </tr>
 EOF
 	# now make the detailed page about the .roa file
-	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
+	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SKI%${SKI#??}}/${SKI}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>Route Origin Authorization</strong>
@@ -155,10 +155,10 @@ for i in $(find * -type f -name '*.mft' -print); do
 	fi
 	{
 	MFT=$(test-mft -v ${i} | sed 's/OK//')
-	SIA=$(echo "${MFT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
+	SKI=$(echo "${MFT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	AKI=$(echo "${MFT}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
-	echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
-	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
+	echo "$SKI $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
+	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SKI%${SKI#??}}/${SKI}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>RPKI Manifest</strong>
@@ -188,10 +188,10 @@ for i in $(find * -type f -name '*.cer' -print); do
 	if [ "$CERT" = "" ]; then
 		echo -n .
 	else
-		SIA=$(echo "${CERT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
+		SKI=$(echo "${CERT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 		AKI=$(echo "${CERT}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
-		echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
-		cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
+		echo "$SKI $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
+		cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SKI%${SKI#??}}/${SKI}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>RPKI Certificate</strong>
@@ -215,16 +215,16 @@ wait
 # each other in a logical way.
 # link all keywords
 cd $1/
-for SIAFILE in $(find . -name "*.html" -print); do
+for SKIFILE in $(find . -name "*.html" -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
 		wait
 	fi
 	{
-	for LINK in $(egrep '[[:space:]]hash |URI:rsync://' ${SIAFILE} | fgrep -v '.crl' | awk '{ print $NF }' | sed 's/URI:rsync:\/\///'); do
-		fgrep " $LINK" ../mapping.txt | while IFS=' ' read -r MSIA MHASH MRFP MLFP; do
-			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSIA}.html\">$MHASH\</a\>|;" \
-				-e "s|\Q: $MRFP\E|: \<a href=\"./${MSIA}.html\">$MRFP\</a\>|;" \
-				-e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSIA}.html\">$MLFP\</a\>|" ${SIAFILE}
+	for LINK in $(egrep '[[:space:]]hash |URI:rsync://' ${SKIFILE} | fgrep -v '.crl' | awk '{ print $NF }' | sed 's/URI:rsync:\/\///'); do
+		fgrep " $LINK" ../mapping.txt | while IFS=' ' read -r MSKI MHASH MRFP MLFP; do
+			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSKI}.html\">$MHASH\</a\>|;" \
+				-e "s|\Q: $MRFP\E|: \<a href=\"./${MSKI}.html\">$MRFP\</a\>|;" \
+				-e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSKI}.html\">$MLFP\</a\>|" ${SKIFILE}
 		done
 	done
 	echo -n L
