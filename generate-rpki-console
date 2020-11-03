@@ -19,14 +19,28 @@ rm -rf $1/ mapping.txt tal-mapping.txt
 mkdir $1/
 cp rpki_console.gif $1/
 
-# try some sharding
+# make 256 subdirectories, so we dont end up
+# with 100K files in the output directory
+# trashing the performance of the filesystem
 for i in 0 1 2 3 4 5 6 7 8 9 A B C D E F; do
 	for j in 0 1 2 3 4 5 6 7 8 9 A B C D E F; do
 		mkdir $1/${i}${j}; done; done
 
+# run rpki-client to contact all RPKI publication points
+# and validate all X509 certificates, produce JSON/CSV output.
+# this process also cleans out any invalid certificates from
+# the /var/cache/rpki-client/ binary x509 certificate cache
 RUN=$(/usr/bin/time rpki-client -vjco 2>&1 >/dev/zero)
 
-# deal with tals
+# first we hook up the /etc/rpki/*.tal files to index.html
+# step one is to extract the URI of the RPKI Root certificate
+# with 'test-tal -v', then use 'test-cert -v' pointed to the
+# locally cached certificate file to extract the SIA.
+# rpki-client earlier on downloaded all files from the rsync
+# servers, so all URIs in the rpki output are also locally
+# in /var/cache/rpki-client
+# rsync://rpki.afrinic.net/repository/AfriNIC.cer is
+# also on disk as /var/cache/rpki-client/rpki.afrinic.net/repository/AfriNIC.cer
 for i in /etc/rpki/*.tal; do
 	TA=$(test-cert -vt $(test-tal -v $i | grep 'URI: rsync' | awk -F// '{ print "/var/cache/rpki-client/" $2 }' ) $i | sed 's/OK//')
 	SIA=$(echo "${TA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
@@ -47,6 +61,7 @@ EOF
 echo -n T
 done
 
+# make the http://console.rpki-client.org/ frontpage
 cat << EOF > $1/index.html
 <a href="./roas.html"><img border=0 src="rpki_console.gif" /></a>
 <pre>
@@ -67,6 +82,7 @@ EOF
 cp /var/db/rpki-client/csv $1/vrps.csv
 cp /var/db/rpki-client/json $1/vrps.json
 
+# make a header for the big http://console.rpki-client.org/roas.html page
 cat << EOF > $1/roas.html
 <a href="./"><img border=0 src="rpki_console.gif" /></a>
 <style>
@@ -83,6 +99,12 @@ td {
 EOF
 
 # Start processing ROAs
+# here we iterate through each .roa file in the cache
+# and then execute the 'test-roa -v' command to extract
+# the human readable info about the ROA eContent
+# we first spit something out into the big roas.html file
+# and then make a per-ROA specific html page with the
+# full 'openssl x509' output
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.roa' -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
@@ -105,6 +127,7 @@ $(echo "${ROA}" | fgrep 'max: ')
 </td>
 </tr>
 EOF
+	# now make the detailed page about the .roa file
 	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
 <img src="rpki_console.gif" />
 <pre>
@@ -124,7 +147,7 @@ done
 
 echo "</table><i>Generated on $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i>" >> $1/roas.html
 
-# Start processing manifests
+# Start processing manifests, quite similar to .roa files
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.mft' -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
@@ -153,7 +176,8 @@ echo -n M
 done
 wait
 
-# certificates
+# certificates, here we don't need a separate '-p' pass as the .cer
+# files are simpler BER/DER formatted files.
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.cer' -print); do
 	if test "$(jobs | wc -l)" -ge $PJOBS; then
@@ -186,6 +210,9 @@ EOF
 done
 wait
 
+# now, at this point the mappings.txt file is very very big but contains
+# all information to hook up all interesting urls and identifiers up to
+# each other in a logical way.
 # link all keywords
 cd $1/
 for SIAFILE in $(find . -name "*.html" -print); do
