@@ -8,6 +8,8 @@ set -e
 
 PJOBS=16
 
+export LC_ALL=C
+
 if [[ $# -eq 0 ]] ; then
     echo 'must specify output directory'
     exit 1
@@ -17,6 +19,11 @@ rm -rf $1/ mapping.txt tal-mapping.txt
 mkdir $1/
 cp rpki_console.gif $1/
 
+# try some sharding
+for i in 0 1 2 3 4 5 6 7 8 9 A B C D E F; do
+	for j in 0 1 2 3 4 5 6 7 8 9 A B C D E F; do
+		mkdir $1/${i}${j}; done; done
+
 RUN=$(/usr/bin/time rpki-client -vjco 2>&1 >/dev/zero)
 
 # deal with tals
@@ -25,7 +32,7 @@ for i in /etc/rpki/*.tal; do
 	SIA=$(echo "${TA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	MFT=$(echo "${TA}" | fgrep -m1 'Manifest:' | awk -F// '{ print $2 }')
 	echo "<a href=\"./$SIA.html\">$SIA</a> $i" >> tal-mapping.txt
-cat << EOF > $1/${SIA}.html
+cat << EOF > $1/${SIA%${SIA#??}}/${SIA}.html
 <a href="./"><img border=0 src="rpki_console.gif" /></a>
 <pre>
 <strong>RPKI Root Certificate</strong>
@@ -66,7 +73,7 @@ for i in $(find * -type f -name '*.roa' -print); do
 	SIA=$(echo "${ROA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	AKI=$(echo "${ROA}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
 	echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
-	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA}.html
+	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>Route Origin Authorization</strong>
@@ -94,7 +101,7 @@ for i in $(find * -type f -name '*.mft' -print); do
 	SIA=$(echo "${MFT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	AKI=$(echo "${MFT}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
 	echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
-	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA}.html
+	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>RPKI Manifest</strong>
@@ -110,6 +117,7 @@ EOF
 echo -n M
 } &
 done
+wait
 
 # certificates
 cd /var/cache/rpki-client/
@@ -125,7 +133,7 @@ for i in $(find * -type f -name '*.cer' -print); do
 		SIA=$(echo "${CERT}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 		AKI=$(echo "${CERT}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
 		echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
-		cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA}.html
+		cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
 <img src="rpki_console.gif" />
 <pre>
 <strong>RPKI Certificate</strong>
@@ -142,19 +150,26 @@ EOF
 	fi
 	} &
 done
+wait
 
 # link all keywords
 cd $1/
-for SIA in $(find . -name "*.html" -print | sed 's/.html$//'); do
-	for HASH in $(fgrep 'hash ' $1/${SIA}.html | awk '{ print $NF }'); do
-		fgrep " $HASH " ../mapping.txt | while IFS=' ' read -r MSIA MHASH MRFP MLFP; do
-			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSIA}.html\">$MHASH\</a\>|" $1/$SIA.html
-			perl -p -i -e "s|\Q: $MRFP\E|: \<a href=\"./${MSIA}.html\">$MRFP\</a\>|" $1/$SIA.html
+for SIAFILE in $(find . -name "*.html" -print); do
+	if test "$(jobs | wc -l)" -ge $PJOBS; then
+		wait
+	fi
+	{
+	for LINK in $(egrep '[[:space:]]hash |URI:rsync://' ${SIAFILE} | fgrep -v '.crl' | awk '{ print $NF }' | sed 's/URI:rsync:\/\///'); do
+		fgrep " $LINK" ../mapping.txt | while IFS=' ' read -r MSIA MHASH MRFP MLFP; do
+			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSIA}.html\">$MHASH\</a\>|" ${SIAFILE}
+			perl -p -i -e "s|\Q: $MRFP\E|: \<a href=\"./${MSIA}.html\">$MRFP\</a\>|" ${SIAFILE}
+			perl -p -i -e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSIA}.html\">$MLFP\</a\>|" ${SIAFILE}
 		done
 	done
-	for LFP in $(fgrep 'URI:rsync://' $1/${SIA}.html | awk '{ print $NF }' | sed 's/URI:rsync:\/\///'); do
-		fgrep " $LFP" ../mapping.txt | while IFS=' ' read -r MSIA MHASH MRFP MLFP; do
-			perl -p -i -e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSIA}.html\">$MLFP\</a\>|" $1/${SIA}.html
-		done
-	done
+	echo -n L
+} &
 done
+wait
+echo
+find . -name "*.html" -print | xargs -J % mv % .
+find . -type d ! -path . | xargs rmdir
