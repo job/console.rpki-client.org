@@ -97,7 +97,7 @@ for i in $(find * -type f -name '*.roa' -print); do
 	cat << EOF >> $1/roas.html
 <tr>
 <td valign="top"><pre><a href="./${SIA}.html">${SIA}</a></pre></td>
-<td valign="top" style="text-align:center;"><pre>AS: ${ASID}</pre></td>
+<td valign="top" style="text-align:center;"><pre>AS${ASID}</pre></td>
 <td>
 <pre>
 $(echo "${ROA}" | fgrep 'max: ')
