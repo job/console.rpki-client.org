@@ -161,9 +161,9 @@ for SIAFILE in $(find . -name "*.html" -print); do
 	{
 	for LINK in $(egrep '[[:space:]]hash |URI:rsync://' ${SIAFILE} | fgrep -v '.crl' | awk '{ print $NF }' | sed 's/URI:rsync:\/\///'); do
 		fgrep " $LINK" ../mapping.txt | while IFS=' ' read -r MSIA MHASH MRFP MLFP; do
-			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSIA}.html\">$MHASH\</a\>|" ${SIAFILE}
-			perl -p -i -e "s|\Q: $MRFP\E|: \<a href=\"./${MSIA}.html\">$MRFP\</a\>|" ${SIAFILE}
-			perl -p -i -e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSIA}.html\">$MLFP\</a\>|" ${SIAFILE}
+			perl -p -i -e "s|\Q$MHASH\E|\<a href=\"./${MSIA}.html\">$MHASH\</a\>|;" \
+				-e "s|\Q: $MRFP\E|: \<a href=\"./${MSIA}.html\">$MRFP\</a\>|;" \
+				-e "s|\Qrsync://$MLFP\E|rsync://<a href=\"./${MSIA}.html\">$MLFP\</a\>|" ${SIAFILE}
 		done
 	done
 	echo -n L
