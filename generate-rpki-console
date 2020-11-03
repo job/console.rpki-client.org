@@ -48,8 +48,11 @@ echo -n T
 done
 
 cat << EOF > $1/index.html
-<img src="rpki_console.gif" />
+<a href="./roas.html"><img border=0 src="rpki_console.gif" /></a>
 <pre>
+Listing of all current RPKI ROAs: <a href="./roas.html">here</a>.
+
+Trust Anchors:
 $(cat tal-mapping.txt | sort -k2)
 
 $(date)
