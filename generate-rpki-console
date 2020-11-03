@@ -55,7 +55,9 @@ Listing of all current RPKI ROAs: <a href="./roas.html">here</a>.
 Trust Anchors:
 $(cat tal-mapping.txt | sort -k2)
 
+$ date
 $(date)
+$ doas rpki-client -vjc
 ${RUN}
 </pre>
 Download the RPKI VRPs in <a href="./vrps.csv">csv</a> or <a href="./vrps.json">json</a> format.<br />
