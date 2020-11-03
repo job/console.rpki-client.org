@@ -33,7 +33,7 @@ for i in /etc/rpki/*.tal; do
 	MFT=$(echo "${TA}" | fgrep -m1 'Manifest:' | awk -F// '{ print $2 }')
 	echo "<a href=\"./$SIA.html\">$SIA</a> $i" >> tal-mapping.txt
 cat << EOF > $1/${SIA%${SIA#??}}/${SIA}.html
-<a href="./"><img border=0 src="rpki_console.gif" /></a>
+<a href="./roas.html"><img border=0 src="rpki_console.gif" /></a>
 <pre>
 <strong>RPKI Root Certificate</strong>
 Locator: $i
@@ -62,6 +62,21 @@ EOF
 cp /var/db/rpki-client/csv $1/vrps.csv
 cp /var/db/rpki-client/json $1/vrps.json
 
+cat << EOF > $1/roas.html
+<a href="./"><img border=0 src="rpki_console.gif" /></a>
+<style>
+td {
+  border-bottom: 1px solid grey;
+}
+</style>
+<table>
+<tr>
+<th>SIA</th>
+<th style="width: 20%;">asID</th>
+<th>Prefixes</th>
+</tr>
+EOF
+
 # roas
 cd /var/cache/rpki-client/
 for i in $(find * -type f -name '*.roa' -print); do
@@ -72,7 +87,19 @@ for i in $(find * -type f -name '*.roa' -print); do
 	ROA=$(test-roa -v ${i} | sed 's/OK//')
 	SIA=$(echo "${ROA}" | fgrep -m1 'Subject key identifier:' | sed 's/.*: //' | tr '[:lower:]' '[:upper:]')
 	AKI=$(echo "${ROA}" | fgrep -m1 'Authority key identifier:' | sed 's/.*: //')
+	ASID=$(echo "${ROA}" | fgrep -m1 'asID:' | awk '{ print $NF }')
 	echo "$SIA $(sha256 -qb $i) $(basename $i) $i" >> $1/../mapping.txt
+	cat << EOF >> $1/roas.html
+<tr>
+<td valign="top"><pre><a href="./${SIA}.html">${SIA}</a></pre></td>
+<td valign="top" style="text-align:center;"><pre>AS: ${ASID}</pre></td>
+<td>
+<pre>
+$(echo "${ROA}" | fgrep 'max: ')
+</pre>
+</td>
+</tr>
+EOF
 	cat << EOF | sed "s|${AKI}|<a href=\"./${AKI}.html\">${AKI}\</a\>|" > $1/${SIA%${SIA#??}}/${SIA}.html
 <img src="rpki_console.gif" />
 <pre>
