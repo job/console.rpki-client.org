@@ -52,21 +52,28 @@ sub get_roainfo {
 sub write_html {
         my $roainfo = shift;
 	my $html;
-	my $htmlfp = "AS" . $roainfo->{'asid'} . ".html";
+	my $header;
 	my $fh;
 	my $fh2;
+	my $htmlfp = "AS" . $roainfo->{'asid'} . ".html";
 
-	if (!(-e $htmlfp)) {
-		$html = '<a href="/"><img src="./console.gif" border=0></a><br />' . "\n";
-		$html .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
-		$html .= '<style>td { border-bottom: 1px solid grey; }</styLE>' . "\n";
-		$html .= '<table>' . "\n";
-		$html .= '<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>'. "\n";
-		open($fh, '>', $htmlfp) or die $!;
-		open($fh2, '>', 'roas.html') or die $!;
-	} else {
+	$header = '<a href="/"><img src="./console.gif" border=0></a><br />' . "\n";
+	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
+	$header .= '<style>td { border-bottom: 1px solid grey; }</styLE>' . "\n";
+	$header .= '<table>' . "\n";
+	$header .= '<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>'. "\n";
+
+	if (-e $htmlfp) {
 		open($fh, '>>', $htmlfp) or die $!;
+	} else {
+		open($fh, '>', $htmlfp) or die $!;
+		print $fh $header;
+	}
+	if (-e 'roas.html') {
 		open($fh2, '>>', 'roas.html') or die $!;
+	} else {
+		open($fh2, '>', 'roas.html') or die $!;
+		print $fh2 $header;
 	}
 	$html .= "<tr>\n";
 	$html .= '<td valign=top><strong><pre><a href="/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
