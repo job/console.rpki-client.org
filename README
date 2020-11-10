@@ -1,7 +1,0 @@
-cd /usr/src
-ftp https://cdn.openbsd.org/pub/OpenBSD/6.8/src.tar.gz
-tar fxz src.tar.gz && rm src.tar.gz
-cvs -d anoncvs@anoncvs.ca.openbsd.org:/cvs up -Pd
-cd regress/usr.sbin/rpki-client/
-make
-doas cp -v test-{cert,mft,tal,roa} /usr/local/bin
