@@ -27,7 +27,7 @@ find * -type f ! -name '*.html' -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/hom
 cd -
 
 cp console.gif $TMPDIR/
-cp /var/db/rpki-client/csv $TMPDIR/vrps.cvs
+cp /var/db/rpki-client/csv $TMPDIR/vrps.csv
 cp /var/db/rpki-client/json $TMPDIR/vrps.json
 mv $TMPDIR/output.log.html $TMPDIR/index.html
 
