@@ -35,9 +35,12 @@ wait
 
 find $TMPDIR -type d -print0 | xargs -0 doas chmod 755
 find $TMPDIR -type f -print0 | xargs -0 doas chmod 644
-doas chown -R www $TMPDIR
 
-openrsync -rt $TMPDIR/ chloe.sobornost.net:/var/www/htdocs/console.rpki-client.org/
+# given the nature of the file and directory layout, using tar
+# over ssh is perhaps faster than using rsync
+cd $TMPDIR/ && tar cfz - . | ssh chloe.sobornost.net -c 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfz -'
+
+# openrsync -rt $TMPDIR/ chloe.sobornost.net:/var/www/htdocs/console.rpki-client.org/
 
 doas umount $TMPDIR
 doas rmdir $TMPDIR
