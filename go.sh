@@ -28,7 +28,7 @@ cd -
 
 cp console.gif $TMPDIR/
 cp /var/db/rpki-client/csv $TMPDIR/vrps.cvs
-cp /var/db/rpki-client/json $TMPDIR/json.cvs
+cp /var/db/rpki-client/json $TMPDIR/vrps.json
 mv $TMPDIR/output.log.html $TMPDIR/index.html
 
 wait
