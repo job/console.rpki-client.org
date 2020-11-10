@@ -57,7 +57,7 @@ sub write_html {
 	my $fh2;
 	my $htmlfp = "AS" . $roainfo->{'asid'} . ".html";
 
-	$header = '<a href="/"><img src="./console.gif" border=0></a><br />' . "\n";
+	$header = '<a href="/"><img src="/console.gif" border=0></a><br />' . "\n";
 	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
 	$header .= '<style>td { border-bottom: 1px solid grey; }</styLE>' . "\n";
 	$header .= '<table>' . "\n";

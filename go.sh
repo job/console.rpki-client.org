@@ -23,7 +23,7 @@ EOF
 
 # make per object files
 cd $TMPDIR
-find * -type f -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
+find * -type f ! -name '*.html' -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
 cd -
 
 cp console.gif $TMPDIR/

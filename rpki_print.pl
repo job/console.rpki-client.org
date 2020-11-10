@@ -226,16 +226,18 @@ sub write_index {
 	}
 	close($fh);
 
+	$talindex = '<table>';
 	foreach my $tal (@talfiles) {
 		open($fh, '-|', "test-tal -v $tal");
 		while(<$fh>) {
 			chomp;
 			if (/.* URI: rsync:\/\/(.*)/) {
-				$talindex .= $tal . ": <a href=\"$1.html\">$1</a>\n";
+				$talindex .= '<tr><td>' . $tal . ":</td><td><a href=\"$1.html\">$1</a></td></tr>\n";
 			}
 		}
 		close($fh)
 	}
+	$talindex .= '<table>';
 
         $templatedata =~ s/{tals}/$talindex/g;
         $templatedata =~ s/{date}/$date/g;
