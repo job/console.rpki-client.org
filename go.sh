@@ -18,6 +18,9 @@ $ time doas rpki-client -vcj
 $LOG
 EOF
 
+# make per-ASN html file based on ROA data
+(cd $TMPDIR && find * -type f -name '*.roa' -print0 | xargs -r -0 -n1 /home/job/console.rpki-client.org/roa_print.pl) &
+
 # make per object files
 cd $TMPDIR
 find * -type f -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
@@ -28,8 +31,7 @@ cp /var/db/rpki-client/csv $TMPDIR/vrps.cvs
 cp /var/db/rpki-client/json $TMPDIR/json.cvs
 mv $TMPDIR/output.log.html $TMPDIR/index.html
 
-# make per ASN files
-time find * -name '*.roa' -type f -print0 | xargs -r -0 -n1 /home/job/console.rpki-client.org/roa_print.pl
+wait
 
 find $TMPDIR -type d -print0 | xargs -0 doas chmod 755
 find $TMPDIR -type f -print0 | xargs -0 doas chmod 644

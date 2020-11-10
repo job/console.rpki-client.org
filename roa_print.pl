@@ -54,6 +54,8 @@ sub write_html {
 	my $html;
 	my $htmlfp = "AS" . $roainfo->{'asid'} . ".html";
 	my $fh;
+	my $fh2;
+
 	if (!(-e $htmlfp)) {
 		$html = '<a href="/"><img src="./console.gif" border=0></a><br />' . "\n";
 		$html .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
@@ -61,8 +63,10 @@ sub write_html {
 		$html .= '<table>' . "\n";
 		$html .= '<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>'. "\n";
 		open($fh, '>', $htmlfp) or die $!;
+		open($fh2, '>', 'roas.html') or die $!;
 	} else {
 		open($fh, '>>', $htmlfp) or die $!;
+		open($fh2, '>>', 'roas.html') or die $!;
 	}
 	$html .= "<tr>\n";
 	$html .= '<td valign=top><strong><pre><a href="/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
@@ -71,6 +75,8 @@ sub write_html {
 	$html .= "</tr>\n";
 	print $fh $html;
 	close $fh;
+	print $fh2 $html;
+	close $fh2;
 }
 
 write_html (get_roainfo $ARGV[0]);
