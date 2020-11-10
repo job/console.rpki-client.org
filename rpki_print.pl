@@ -237,7 +237,7 @@ sub write_index {
 		}
 		close($fh)
 	}
-	$talindex .= '<table>';
+	$talindex .= '</table>';
 
         $templatedata =~ s/{tals}/$talindex/g;
         $templatedata =~ s/{date}/$date/g;
