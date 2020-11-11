@@ -216,7 +216,7 @@ sub get_template {
 sub write_index {
 	my $log = shift;
 	my $logoutput;
-	my $talindex;
+	my $taindex;
         my $templatedata = get_template($index_template);
 
 	open(my $fh, '<', $log) or die "cannot open file $log";
@@ -226,20 +226,18 @@ sub write_index {
 	}
 	close($fh);
 
-	$talindex = '<table>';
 	foreach my $tal (@talfiles) {
 		open($fh, '-|', "test-tal -v $tal");
 		while(<$fh>) {
 			chomp;
 			if (/.* URI: rsync:\/\/(.*)/) {
-				$talindex .= '<tr><td>' . $tal . ":</td><td><a href=\"$1.html\">$1</a></td></tr>\n";
+				$taindex .= '<a href=\"$1.html\">rsync://$1</a>\n';
 			}
 		}
 		close($fh)
 	}
-	$talindex .= '</table>';
 
-        $templatedata =~ s/{tals}/$talindex/g;
+        $templatedata =~ s/{tals}/$taindex/g;
         $templatedata =~ s/{date}/$date/g;
         $templatedata =~ s/{log}/$logoutput/g;
         print $templatedata;
