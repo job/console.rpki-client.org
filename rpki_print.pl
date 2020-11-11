@@ -67,7 +67,7 @@ sub get_roainfo {
 		} elsif (/^asID:/) {
 			s/asID: //;
 			$roainfo->{'asid'} = $_;
-		} elsif (/^\s*[1-9]*:/) {
+		} elsif (/^\s*[0-9]*:/) {
 			$roainfo->{'prefixes'} .= $_ . "\n";
 		}
 	}
@@ -167,7 +167,7 @@ sub get_mftinfo {
 		} elsif (/^Authority key identifier:/) {
 			s/Authority key identifier: //;
 			$mftinfo->{'aki'} = $_;
-		} elsif (/(^\s*[1-9]*:) (.*)/) {
+		} elsif (/(^\s*[0-9]*:) (.*)/) {
 			$mftinfo->{'files'} .= "$1 <a href=\"$2.html\">$2</a>\n";
 		} elsif (/^\s*hash /) {
 			$mftinfo->{'files'} .= $_ . "\n";
