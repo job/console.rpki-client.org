@@ -42,5 +42,6 @@ cd $TMPDIR/ && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console
 
 # openrsync -rt $TMPDIR/ chloe.sobornost.net:/var/www/htdocs/console.rpki-client.org/
 
+cd
 doas umount $TMPDIR
 doas rmdir $TMPDIR
