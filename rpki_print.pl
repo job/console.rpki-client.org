@@ -231,7 +231,7 @@ sub write_index {
 		while(<$fh>) {
 			chomp;
 			if (/.* URI: rsync:\/\/(.*)/) {
-				$taindex .= '<a href=\"$1.html\">rsync://$1</a>\n';
+				$taindex .= "<a href=\"$1.html\">rsync://$1</a>\n";
 			}
 		}
 		close($fh)
