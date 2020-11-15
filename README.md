@@ -18,6 +18,14 @@ The `test-mft`, `test-cert`, `test-roa`, and `test-tal` utilities are part of th
 OpenBSD regression framework. To obtain a copy please downlaod the OpenBSD source
 code tree, update to the latest version using `cvs`.
 
+easy way:
+
+```
+cvs -d anoncvs@anoncvs.ca.openbsd.org:/cvs checkout -P src/regress/usr.sbin/rpki-client
+```
+
+hard way:
+
 ```
 cd /usr/src
 ftp https://cdn.openbsd.org/pub/OpenBSD/6.8/src.tar.gz
