@@ -40,7 +40,7 @@ sub get_roainfo {
 		} elsif (/^asID:/) {
 			s/asID: //;
 			$roainfo->{'asid'} = $_;
-		} elsif (/^\s*([1-9]*:.*)/) {
+		} elsif (/^\s*([0-9]*:.*)/) {
 			$roainfo->{'prefixes'} .= $1 . "\n";
 		}
 	}
