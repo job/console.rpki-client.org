@@ -11,6 +11,10 @@ Demo instance
 
 A live instance is available at http://console.rpki-client.org/
 
+TALs
+====
+You have to obtain the TALs yourself, those are not included in this project.
+
 PEM print utilities
 ===================
 
