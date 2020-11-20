@@ -15,7 +15,7 @@ $ date
 $(date)
 
 $ time doas rpki-client -vcj
-$LOG
+${LOG}
 EOF
 
 # make per-ASN html file based on ROA data
