@@ -11,10 +11,10 @@ doas mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
 doas chown -R job $TMPDIR
 
 cat > $TMPDIR/output.log << EOF
-$ date
+# date
 $(date)
 
-$ time doas rpki-client -vcj
+# time rpki-client -v -j -c
 ${LOG}
 EOF
 
