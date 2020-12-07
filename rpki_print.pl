@@ -23,10 +23,11 @@ my $roa_template = "/home/job/console.rpki-client.org/templates/roa.html";
 my $mft_template = "/home/job/console.rpki-client.org/templates/manifest.html";
 my $cert_template = "/home/job/console.rpki-client.org/templates/certificate.html";
 my $crl_template = "/home/job/console.rpki-client.org/templates/crl.html";
+my $gbr_template = "/home/job/console.rpki-client.org/templates/gbr.html";
 
 my @talfiles = glob($tals);
 
-my @suffixes = ('cer', 'crl', 'mft', 'roa', 'log');
+my @suffixes = ('cer', 'gbr', 'crl', 'mft', 'roa', 'log');
 my ($filepath, $dir, $type) = fileparse($ARGV[0], @suffixes);
 
 my $date = localtime();
@@ -133,6 +134,55 @@ sub print_crl {
 
         print $templatedata;
 }
+
+####
+# CRL
+####
+
+sub get_gbrinfo {
+	my $gbr = shift;
+
+	my $gbrinfo;
+	$gbrinfo->{'sia'} = $gbr;
+
+	# Pipe the CMS through openssl to extract the eContent
+	open(my $CMD, "-|", "$openssl cms -verify -noverify -in $gbr -inform DER -signer $gbr.pem") or die "Can't run $openssl: $!\n";
+	while(<$CMD>) {
+		chomp;
+		if (!/Verification successful/) {
+			$gbrinfo->{'gbr'} .= $_ . "\n";
+		}
+	}
+	close($CMD);
+
+	# Pipe the PEM encoded EE certificate through openssl
+	open($CMD, "-|", "$openssl x509 -in $gbr.pem -text") or die "Can't run $openssl: $!\n";
+	while(<$CMD>) {
+		chomp;
+		if (/(\s*keyid:)(.*)$/) {
+			$gbrinfo->{'aki'} = $2;
+		}
+		$gbrinfo->{'gbrcert'} .= $_ . "\n";
+	}
+	close($CMD);
+
+	return $gbrinfo;
+}
+
+sub print_gbr {
+        my $gbrinfo = shift;
+
+        my $templatedata = get_template($gbr_template);
+
+        $templatedata =~ s/{sia}/$gbrinfo->{'sia'}/g;
+        $templatedata =~ s/{aki}/$gbrinfo->{'aki'}/g;
+        $templatedata =~ s/{gbr}/$gbrinfo->{'gbr'}/g;
+        $templatedata =~ s/{gbrcert}/$gbrinfo->{'gbrcert'}/g;
+        $templatedata =~ s/{date}/$date/g;
+
+        print $templatedata;
+}
+
 
 ####
 # Manifest file processing
@@ -354,6 +404,8 @@ if ($type eq 'roa') {
 	print_crl (get_crlinfo $ARGV[0]);
 } elsif ($type eq 'cer') {
 	print_cert (get_certinfo $ARGV[0]);
+} elsif ($type eq 'gbr') {
+	print_gbr (get_gbrinfo $ARGV[0]);
 } else {
 	print "Needs a filename as arguments";
 }
