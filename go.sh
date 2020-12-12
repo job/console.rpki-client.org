@@ -1,14 +1,22 @@
 #!/bin/sh
 
+USERNAME='job'
+OS=`uname -s`
+if test $OS = 'Linux'; then
+	DOAS='sudo'
+else
+	DOAS='doas'
+fi
+
 set -ev
 
-TMPDIR=$(mktemp -d)
+TMPDIR=`mktemp -d`
 
-LOG=$(doas /usr/bin/time rpki-client -vcj 2>&1 > /dev/zero)
+LOG=$($DOAS /usr/bin/time rpki-client -vcj 2>&1 > /dev/zero)
 
-doas mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
+$DOAS mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
 
-doas chown -R job $TMPDIR
+$DOAS chown -R $USERNAME $TMPDIR
 
 cat > $TMPDIR/output.log << EOF
 # date
@@ -33,8 +41,8 @@ mv $TMPDIR/output.log.html $TMPDIR/index.html
 
 wait
 
-find $TMPDIR -type d -print0 | xargs -0 doas chmod 755
-find $TMPDIR -type f -print0 | xargs -0 doas chmod 644
+find $TMPDIR -type d -print0 | xargs -0 $DOAS chmod 755
+find $TMPDIR -type f -print0 | xargs -0 $DOAS chmod 644
 
 # given the nature of the file and directory layout, using tar
 # over ssh is perhaps faster than using rsync
@@ -43,5 +51,5 @@ cd $TMPDIR/ && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console
 # openrsync -rt $TMPDIR/ chloe.sobornost.net:/var/www/htdocs/console.rpki-client.org/
 
 cd
-doas umount $TMPDIR
-doas rmdir $TMPDIR
+$DOAS umount $TMPDIR
+$DOAS rmdir $TMPDIR
