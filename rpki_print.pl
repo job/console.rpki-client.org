@@ -50,7 +50,7 @@ sub get_roainfo {
 		if (/\s*CA Issuers - URI:rsync:\/\/(.*\.cer)$/) {
 			$roainfo->{'aia'} = $1;
 		}
-		if (/\s*1.3.6.1.5.5.7.48.11 - URI:rsync:\/\/(.*)/) {
+		if (/\s*Signed Object - URI:rsync:\/\/(.*)/) {
 			$roainfo->{'sia'} = $1;
 		}
 	}
@@ -202,7 +202,7 @@ sub get_mftinfo {
 		if (/\s*CA Issuers - URI:rsync:\/\/(.*\.cer)$/) {
 			$mftinfo->{'aia'} = $1;
 		}
-		if (/\s*1.3.6.1.5.5.7.48.11 - URI:rsync:\/\/(.*)/) {
+		if (/\s*Signed Object - URI:rsync:\/\/(.*)/) {
 			$mftinfo->{'sia'} = $1;
 		}
 	}
