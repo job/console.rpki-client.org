@@ -281,11 +281,17 @@ sub write_index {
 	close($fh);
 
 	foreach my $tal (@talfiles) {
+		my $tashort;
+		my @taname;
+		@taname = split('/', $tal);
+		$tashort = substr "$taname[3]", 0, -4;
 		open($fh, '-|', "test-tal -v $tal");
 		while(<$fh>) {
 			chomp;
 			if (/.* URI: rsync:\/\/(.*)/) {
-				$taindex .= "<a href=\"$1.html\">rsync://$1</a>\n";
+				my $fname = fileparse($1);
+				$taindex .= "<a href=\"/ta/$tashort/" . $fname . ".html\">rsync://$1</a>\n";
+
 			}
 		}
 		close($fh)
@@ -297,19 +303,12 @@ sub write_index {
         print $templatedata;
 }
 
-sub get_tal_from_certsia {
-	my $sia = shift;
-	foreach my $tal (@talfiles) {
-		open(my $CMD, '-|', "test-tal -v $tal");
-		while (<$CMD>) {
-			if (/URI: rsync:\/\/(.*)/) {
-				if ($sia eq $1) {
-					return $tal;
-				}
-			}
-		}
-	}
-	die "get_tal_from_certsia problem $sia\n";
+sub get_tal_from_filepath {
+	my $path = shift;
+	my @talname = split('/', $path);
+ 
+	return "/etc/rpki/" . $talname[1] . ".tal";
+	die "get_tal_from_filepath problem\n";
 }
 
 ####
@@ -322,20 +321,18 @@ sub get_certinfo {
 	my $certinfo;
 	my $talfile;
 	$certinfo->{'sia'} = $cert;
-	$certinfo->{'root'} = '';
+
+	if ($cert =~ /^ta\//) {
+		$certinfo->{'root'} = 'Root ';
+	} else {
+		$certinfo->{'root'} = '';
+	}
 
 	# Pipe the PEM encoded EE certificate through openssl
 	open(my $CMD, "-|", "$openssl x509 -in $cert -inform DER -text") or die "Can't run $openssl: $!\n";
 	while(<$CMD>) {
 		chomp;
 		$certinfo->{'cert'} .= $_ . "\n";
-		if (/CA:TRUE/) {
-			if ($certinfo->{'aia'}) {
-				$certinfo->{'root'} = '';
-			} else {
-				$certinfo->{'root'} = "Root ";
-			}
-		}
 		if (/\s*CA Issuers - URI:rsync:\/\/(.*\.cer)$/) {
 			$certinfo->{'aia'} = $1;
 			$certinfo->{'root'} = '';
@@ -349,8 +346,8 @@ sub get_certinfo {
 	$certinfo->{'ski'} =~ s/^\s+//;
 	chomp $certinfo->{'ski'};
 
-	if ($certinfo->{'root'}) {
-		$talfile = get_tal_from_certsia $certinfo->{'sia'};
+	if ($certinfo->{'root'} eq 'Root ') {
+		$talfile = get_tal_from_filepath($certinfo->{'sia'});
 		open($CMD, "-|", "test-cert -vt $cert $talfile") or die "Can't run: $!\n";
 	} else {
 		open($CMD, "-|", "test-cert -v $cert") or die "Can't run: $!\n";

@@ -22,7 +22,7 @@ EOF
 (cd "${TMPDIR}/rsync/" && find * -type f -name '*.roa' -print0 | xargs -r -0 -n1 /home/job/console.rpki-client.org/roa_print.pl) &
 
 # make per object files
-cd "${TMPDIR}/rsync/"
+cd "${TMPDIR}/"
 find * -type f ! -name '*.html' -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
 cd -
 
@@ -33,7 +33,6 @@ mv "${TMPDIR}/output.log.html" "${TMPDIR}/index.html"
 
 wait
 
-mv "${TMPDIR}/rsync/*" "${TMPDIR}/"
 find "${TMPDIR}" -type d -print0 | xargs -0 doas chmod 755
 find "${TMPDIR}" -type f -print0 | xargs -0 doas chmod 644
 
