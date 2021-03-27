@@ -217,6 +217,9 @@ sub get_mftinfo {
 		} elsif (/^Authority key identifier:/) {
 			s/Authority key identifier: //;
 			$mftinfo->{'aki'} = $_;
+		} elsif (/^Manifest Number:/) {
+			s/Manifest Number: //;
+			$mftinfo->{'seqnum'} = $_;
 		} elsif (/(^\s*[0-9]*:) (.*)/) {
 			$mftinfo->{'files'} .= "$1 <a href=\"$2.html\">$2</a>\n";
 		} elsif (/^\s*hash /) {
@@ -241,6 +244,7 @@ sub print_mft {
         $templatedata =~ s/{ski}/$mftinfo->{'ski'}/g;
         $templatedata =~ s/{aki}/$mftinfo->{'aki'}/g;
         $templatedata =~ s/{aia}/$mftinfo->{'aia'}/g;
+        $templatedata =~ s/{seqnum}/$mftinfo->{'seqnum'}/g;
         $templatedata =~ s/{files}/$mftinfo->{'files'}/g;
         $templatedata =~ s/{cert}/$mftinfo->{'cert'}/g;
         $templatedata =~ s/{date}/$date/g;
