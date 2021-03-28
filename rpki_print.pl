@@ -362,6 +362,10 @@ sub get_certinfo {
 			$certinfo->{'manifest'} = $1;
 		} elsif (/^Revocation list: (.*)/) {
 			$certinfo->{'crl'} = $1;
+		} elsif (/^caRepository: rsync:\/\/(.*)/) {
+			$certinfo->{'carepository'} = $1;
+		} elsif (/^Notify URL: (.*)/) {
+			$certinfo->{'notifyurl'} = $1;
 		} elsif (/\s+(.*)/) {
 			$certinfo->{'resources'} .= "    " . $1 . "\n";
 		}
@@ -387,6 +391,8 @@ sub print_cert {
 	}
 	$templatedata =~ s/{sia}/$certinfo->{'sia'}/g;
         $templatedata =~ s/{manifest}/$certinfo->{'manifest'}/g;
+        $templatedata =~ s/{notifyurl}/$certinfo->{'notifyurl'}/g;
+        $templatedata =~ s/{carepository}/$certinfo->{'carepository'}/g;
         $templatedata =~ s/{crl}/$certinfo->{'crl'}/g;
         $templatedata =~ s/{resources}/$certinfo->{'resources'}/g;
         $templatedata =~ s/{cert}/$certinfo->{'cert'}/g;
