@@ -55,7 +55,7 @@ sub write_html {
 	my $header;
 	my $fh;
 	my $fh2;
-	my $htmlfp = "AS" . $roainfo->{'asid'} . ".html";
+	my $htmlfp = "../AS" . $roainfo->{'asid'} . ".html";
 
 	$header = '<a href="/"><img src="/console.gif" border=0></a><br />' . "\n";
 	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
@@ -76,7 +76,7 @@ sub write_html {
 		print $fh2 $header;
 	}
 	$html .= "<tr>\n";
-	$html .= '<td valign=top><strong><pre><a href="/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
+	$html .= '<td valign=top><strong><pre><a href="/rsync/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
 	$html .= '<td valign=top style="text-align:center;"><strong><pre><a href="/AS' . $roainfo->{'asid'} . '.html">AS' . $roainfo->{'asid'} . '</a></pre></strong></td>'."\n";
 	$html .= "<td><pre>$roainfo->{'prefixes'}</pre></td>\n";
 	$html .= "</tr>\n";

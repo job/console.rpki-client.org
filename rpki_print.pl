@@ -333,18 +333,8 @@ sub get_certinfo {
 	while(<$CMD>) {
 		chomp;
 		$certinfo->{'cert'} .= $_ . "\n";
-		if (/\s*CA Issuers - URI:rsync:\/\/(.*\.cer)$/) {
-			$certinfo->{'aia'} = $1;
-			$certinfo->{'root'} = '';
-		}
-		if (/\s*X509v3 Subject Key Identifier:/) {
-			$certinfo->{'ski'} = <$CMD>;
-		}
 	}
 	close($CMD);
-
-	$certinfo->{'ski'} =~ s/^\s+//;
-	chomp $certinfo->{'ski'};
 
 	if ($certinfo->{'root'} eq 'Root ') {
 		$talfile = get_tal_from_filepath($certinfo->{'sia'});
@@ -358,6 +348,8 @@ sub get_certinfo {
 			$certinfo->{'ski'} = $1;
 		} elsif (/^Authority key identifier: (.*)/) {
 			$certinfo->{'aki'} = $1;
+		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+			$certinfo->{'aia'} = $1;
 		} elsif (/^Manifest: rsync:\/\/(.*)/) {
 			$certinfo->{'manifest'} = $1;
 		} elsif (/^Revocation list: (.*)/) {
