@@ -68,10 +68,10 @@ sub write_html {
 		open($fh, '>', $htmlfp) or die $!;
 		print $fh $header;
 	}
-	if (-e 'roas.html') {
-		open($fh2, '>>', 'roas.html') or die $!;
+	if (-e '../roas.html') {
+		open($fh2, '>>', '../roas.html') or die $!;
 	} else {
-		open($fh2, '>', 'roas.html') or die $!;
+		open($fh2, '>', '../roas.html') or die $!;
 		print $fh2 $header;
 	}
 	$html .= "<tr>\n";
