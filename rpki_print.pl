@@ -321,6 +321,7 @@ sub get_certinfo {
 	my $certinfo;
 	my $talfile;
 	$certinfo->{'sia'} = $cert;
+	$certinfo->{'notifyurl'} = '';
 
 	if ($cert =~ /^ta\//) {
 		$certinfo->{'root'} = 'Root ';

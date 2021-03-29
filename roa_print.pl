@@ -7,7 +7,6 @@
 
 use strict;
 use warnings;
-use Data::Dumper;
 use File::Basename;
 
 my $openssl = "/usr/bin/openssl";
