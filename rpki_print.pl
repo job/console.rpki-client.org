@@ -16,6 +16,7 @@ my $testtal = "/usr/local/bin/test-tal";
 my $testcert = "/usr/local/bin/test-cert";
 my $testroa = "/usr/local/bin/test-roa";
 my $testmft = "/usr/local/bin/test-mft";
+my $testgbr = "/usr/local/bin/test-gbr";
 
 # template locations
 my $index_template = "/home/job/console.rpki-client.org/templates/index.html";
@@ -143,7 +144,7 @@ sub get_gbrinfo {
 	my $gbr = shift;
 
 	my $gbrinfo;
-	$gbrinfo->{'sia'} = $gbr;
+	$gbrinfo->{'sia'} = substr $gbr, 6;
 
 	# Pipe the CMS through openssl to extract the eContent
 	open(my $CMD, "-|", "$openssl cms -verify -noverify -in $gbr -inform DER -signer $gbr.pem") or die "Can't run $openssl: $!\n";
@@ -159,12 +160,26 @@ sub get_gbrinfo {
 	open($CMD, "-|", "$openssl x509 -in $gbr.pem -text") or die "Can't run $openssl: $!\n";
 	while(<$CMD>) {
 		chomp;
-		if (/(\s*keyid:)(.*)$/) {
-			$gbrinfo->{'aki'} = $2;
-		}
 		$gbrinfo->{'gbrcert'} .= $_ . "\n";
 	}
 	close($CMD);
+
+	# extract AIA, AKI, SKI
+	open($CMD, '-|', "$testgbr -v $gbr") or die "Can't run $testgbr: $!\n";
+	while(<$CMD>) {
+		chomp;
+		if (/^Subject key identifier: /) {
+			s/Subject key identifier: //;
+			$gbrinfo->{'ski'} = $_;
+		} elsif (/^Authority key identifier:/) {
+			s/Authority key identifier: //;
+			$gbrinfo->{'aki'} = $_;
+		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+			$gbrinfo->{'aia'} = $1;
+		}
+	}
+	close($CMD);
+
 
 	return $gbrinfo;
 }
@@ -174,8 +189,10 @@ sub print_gbr {
 
         my $templatedata = get_template($gbr_template);
 
+        $templatedata =~ s/{ski}/$gbrinfo->{'ski'}/g;
         $templatedata =~ s/{sia}/$gbrinfo->{'sia'}/g;
         $templatedata =~ s/{aki}/$gbrinfo->{'aki'}/g;
+        $templatedata =~ s/{aia}/$gbrinfo->{'aia'}/g;
         $templatedata =~ s/{gbr}/$gbrinfo->{'gbr'}/g;
         $templatedata =~ s/{gbrcert}/$gbrinfo->{'gbrcert'}/g;
         $templatedata =~ s/{date}/$date/g;
