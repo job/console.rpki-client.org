@@ -31,6 +31,12 @@ my @talfiles = glob($tals);
 my @suffixes = ('cer', 'gbr', 'crl', 'mft', 'roa', 'log');
 my ($filepath, $dir, $type) = fileparse($ARGV[0], @suffixes);
 
+my %ta_tal = ("EB:68:0F:38:F5:D6:C7:1B:B4:B1:06:B8:BD:06:58:50:12:DA:31:B6" => "afrinic/AfriNIC.cer",
+	"0B:9C:CA:90:DD:0D:7A:8A:37:66:6B:19:21:7F:E0:D8:40:37:B7:A2" => "apnic/apnic-rpki-root-iana-origin.cer",
+	"13:D4:F2:4F:9A:9F:CD:98:DB:36:F9:30:63:18:08:C8:8F:39:74:BC" => "arin/arin-rpki-ta.cer",
+	"FC:8A:9C:B3:ED:18:4E:17:D3:0E:EA:1E:0F:A7:61:5C:E4:B1:AF:47" => "lacnic/rta-lacnic-rpki.cer",
+	"E8:55:2B:1F:D6:D1:A4:F7:E4:04:C6:D8:E5:68:0D:1E:BC:16:3F:C3" => "ripe/ripe-ncc-ta.cer");
+
 my $date = localtime();
 
 ####
@@ -216,9 +222,6 @@ sub get_mftinfo {
 	while(<$CMD>) {
 		chomp;
 		$mftinfo->{'cert'} .= $_ . "\n";
-		if (/\s*CA Issuers - URI:rsync:\/\/(.*\.cer)$/) {
-			$mftinfo->{'aia'} = $1;
-		}
 		if (/\s*Signed Object - URI:rsync:\/\/(.*)/) {
 			$mftinfo->{'sia'} = $1;
 		}
@@ -234,6 +237,8 @@ sub get_mftinfo {
 		} elsif (/^Authority key identifier:/) {
 			s/Authority key identifier: //;
 			$mftinfo->{'aki'} = $_;
+		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+			$mftinfo->{'aia'} = "/rsync/" . $1;
 		} elsif (/^Manifest Number:/) {
 			s/Manifest Number: //;
 			$mftinfo->{'seqnum'} = $_;
@@ -244,6 +249,10 @@ sub get_mftinfo {
 		}
 	}
 	close($CMD);
+
+	if ( exists($ta_tal{$mftinfo->{'aki'}} ) ) {
+		$mftinfo->{'aia'} = "/ta/" . $ta_tal{$mftinfo->{'aki'}};
+	}
 
 	return $mftinfo;
 }
@@ -367,7 +376,7 @@ sub get_certinfo {
 		} elsif (/^Authority key identifier: (.*)/) {
 			$certinfo->{'aki'} = $1;
 		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
-			$certinfo->{'aia'} = $1;
+			$certinfo->{'aia'} = "/rsync/" . $1;
 		} elsif (/^Manifest: rsync:\/\/(.*)/) {
 			$certinfo->{'manifest'} = $1;
 		} elsif (/^Revocation list: (.*)/) {
@@ -381,6 +390,10 @@ sub get_certinfo {
 		}
 	}
 	close($CMD);
+
+	if ( exists($ta_tal{$certinfo->{'aki'}} ) ) {
+		$certinfo->{'aia'} = "/ta/" . $ta_tal{$certinfo->{'aki'}};
+	}
 
 	return $certinfo;
 }
