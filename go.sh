@@ -2,21 +2,15 @@
 
 set -ev
 
-TMPDIR=$(mktemp -d)
+TMPDIR=$(doas rm -rf /tmp/rrdp; mktemp -d)
 
-LOG=$(doas /usr/bin/time rpki-client -vcj 2>&1 > /dev/zero)
+[ -d /var/cache/rpki-client/rrdp ] && doas mv /var/cache/rpki-client/rrdp /tmp
+
+LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 > /dev/zero)
 
 doas mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
 
 doas chown -R job $TMPDIR
-
-cat > $TMPDIR/output.log << EOF
-# date
-$(date)
-
-# time rpki-client -v -j -c
-${LOG}
-EOF
 
 # make per-ASN html file based on ROA data
 (cd "${TMPDIR}/rsync/" && find * -type f -name '*.roa' -print0 | xargs -r -0 -n1 /home/job/console.rpki-client.org/roa_print.pl) &
@@ -26,10 +20,40 @@ cd "${TMPDIR}/"
 find * -type f ! -name '*.html' -print0 | xargs -P16 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
 cd -
 
-cp console.gif $TMPDIR/
+wait
+
 cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
+
 cp /var/db/rpki-client/json "${TMPDIR}/vrps.json"
-mv "${TMPDIR}/output.log.html" "${TMPDIR}/index.html"
+
+cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
+
+[ -d /var/cache/rpki-client/rsync ] && doas rm -rf /var/cache/rpki-client/rsync
+
+[ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
+
+LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 > /dev/zero)
+
+cat > $TMPDIR/output.log << EOF
+# date
+$(date)
+
+# time rpki-client -R -v -j -c
+${LOG}
+
+# time rpki-client -r -v -j -c
+${LOG_RRDP}
+
+# wc -l "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv
+$(wc -l "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv)
+
+# comm -3 "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv
+$(comm -3 "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv)
+EOF
+
+/home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
+
+cp /home/job/console.rpki-client.org/console.gif "${TMPDIR}/"
 
 wait
 
