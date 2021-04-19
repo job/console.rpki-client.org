@@ -6,7 +6,7 @@ TMPDIR=$(doas rm -rf /tmp/rrdp; mktemp -d)
 
 [ -d /var/cache/rpki-client/rrdp ] && doas mv /var/cache/rpki-client/rrdp /tmp
 
-LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 > /dev/zero)
+LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 | ts > /dev/zero)
 
 doas mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
 
@@ -22,8 +22,9 @@ cd -
 
 wait
 
-cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
+sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rsync-only.csv"
 
+cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
 cp /var/db/rpki-client/json "${TMPDIR}/vrps.json"
 
 cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
@@ -32,7 +33,9 @@ cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/con
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 > /dev/zero)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts > /dev/zero)
+
+sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
 cat > $TMPDIR/output.log << EOF
 # date
@@ -44,11 +47,11 @@ ${LOG}
 # time rpki-client -r -v -j -c
 ${LOG_RRDP}
 
-# wc -l "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv
-$(wc -l "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv)
+# wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv
+$(wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 
-# comm -3 "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv
-$(comm -3 "${TMPDIR}/vrps.csv" /var/db/rpki-client/csv)
+# comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv
+$(comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 EOF
 
 /home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
@@ -63,7 +66,6 @@ find "${TMPDIR}" -type f -print0 | xargs -0 doas chmod 644
 # given the nature of the file and directory layout, using tar
 # over ssh is perhaps faster than using rsync
 cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
-
-cd
+cd /
 doas umount $TMPDIR
 doas rmdir $TMPDIR
