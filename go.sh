@@ -6,9 +6,9 @@ TMPDIR=$(doas rm -rf /tmp/rrdp; mktemp -d)
 
 [ -d /var/cache/rpki-client/rrdp ] && doas mv /var/cache/rpki-client/rrdp /tmp
 
-LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 | ts > /dev/zero)
+LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 | ts)
 
-doas mount_mfs -o nosuid,noperm -s 3G -P /var/cache/rpki-client swap $TMPDIR
+doas mount_mfs -o nosuid,noperm -s 5G -P /var/cache/rpki-client swap $TMPDIR
 
 doas chown -R job $TMPDIR
 
@@ -33,7 +33,7 @@ cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/con
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts > /dev/zero)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts)
 
 sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
