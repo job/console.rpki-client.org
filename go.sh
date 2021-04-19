@@ -38,9 +38,6 @@ LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts)
 sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
 cat > $TMPDIR/output.log << EOF
-# date
-$(date)
-
 # time rpki-client -R -v -j -c
 ${LOG}
 
