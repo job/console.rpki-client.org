@@ -27,8 +27,6 @@ sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rsync-only.csv"
 cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
 cp /var/db/rpki-client/json "${TMPDIR}/vrps.json"
 
-cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
-
 [ -d /var/cache/rpki-client/rsync ] && doas rm -rf /var/cache/rpki-client/rsync
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
@@ -37,7 +35,7 @@ LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts)
 
 sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
-cat > $TMPDIR/output.log << EOF
+cat > "${TMPDIR}/output.log" << EOF
 # time rpki-client -R -v -j -c
 ${LOG}
 
@@ -45,10 +43,10 @@ ${LOG}
 ${LOG_RRDP}
 
 # wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv
-$(wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
+$(cd "${TMPDIR}" && wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 
 # comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv
-$(comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv)
+$(cd "${TMPDIR}" && comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 EOF
 
 /home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
@@ -63,6 +61,8 @@ find "${TMPDIR}" -type f -print0 | xargs -0 doas chmod 644
 # given the nature of the file and directory layout, using tar
 # over ssh is perhaps faster than using rsync
 cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
+
+# cleanup
 cd /
 doas umount $TMPDIR
 doas rmdir $TMPDIR
