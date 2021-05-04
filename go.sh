@@ -22,7 +22,7 @@ cd -
 
 wait
 
-sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rsync-only.csv"
+sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rsync-only.csv"
 
 cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
 
@@ -32,7 +32,7 @@ cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
 
 LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -c 2>&1 | ts)
 
-sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
+sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
 cat > "${TMPDIR}/output.log" << EOF
 # time rpki-client -R -v -j -c
@@ -45,7 +45,7 @@ ${LOG_RRDP}
 $(cd "${TMPDIR}" && wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 
 # comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv
-$(cd "${TMPDIR}" && awk -F, 'NF{NF-=1};1' < vrps-rsync-only.csv > rsync.csv && awk -F, 'NF{NF-=1};1' < vrps-rrdp-rsync.csv > rrdp.csv && comm -3 rsync.csv rrdp.csv)
+$(cd "${TMPDIR}" && comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 EOF
 
 /home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
