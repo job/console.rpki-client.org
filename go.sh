@@ -6,7 +6,7 @@ TMPDIR=$(doas rm -rf /tmp/rrdp; mktemp -d)
 
 [ -d /var/cache/rpki-client/rrdp ] && doas mv /var/cache/rpki-client/rrdp /tmp
 
-LOG=$(doas /usr/bin/time rpki-client -R -v -c -j 2>&1 | ts)
+LOG=$(doas /usr/bin/time rpki-client -R -v -c 2>&1 | ts)
 
 doas mount_mfs -o nosuid,noperm -s 5G -P /var/cache/rpki-client swap $TMPDIR
 
@@ -25,13 +25,12 @@ wait
 sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rsync-only.csv"
 
 cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
-cp /var/db/rpki-client/json "${TMPDIR}/vrps.json"
 
 [ -d /var/cache/rpki-client/rsync ] && doas rm -rf /var/cache/rpki-client/rsync
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -j -c 2>&1 | ts)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -c 2>&1 | ts)
 
 sed 1d /var/db/rpki-client/csv | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
@@ -39,14 +38,14 @@ cat > "${TMPDIR}/output.log" << EOF
 # time rpki-client -R -v -j -c
 ${LOG}
 
-# time rpki-client -r -v -j -c
+# time rpki-client -r -v -c
 ${LOG_RRDP}
 
 # wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv
 $(cd "${TMPDIR}" && wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 
 # comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv
-$(cd "${TMPDIR}" && comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv)
+$(cd "${TMPDIR}" && awk -F, 'NF{NF-=1};1' vrps-rsync-only.csv > rsync && awk -F, 'NF{NF-=1};1' vrps-rrdp-rsync.csv > rrdp && comm -3 rsync rrdp)
 EOF
 
 /home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
