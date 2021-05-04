@@ -45,7 +45,7 @@ ${LOG_RRDP}
 $(cd "${TMPDIR}" && wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv)
 
 # comm -3 vrps-rsync-only.csv vrps-rrdp-rsync.csv
-$(cd "${TMPDIR}" && awk -F, 'NF{NF-=1};1' vrps-rsync-only.csv > rsync && awk -F, 'NF{NF-=1};1' vrps-rrdp-rsync.csv > rrdp && comm -3 rsync rrdp)
+$(cd "${TMPDIR}" && awk -F, 'NF{NF-=1};1' < vrps-rsync-only.csv > rsync.csv && awk -F, 'NF{NF-=1};1' < vrps-rrdp-rsync.csv > rrdp.csv && comm -3 rsync.csv rrdp.csv)
 EOF
 
 /home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
