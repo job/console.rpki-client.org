@@ -24,8 +24,6 @@ wait
 
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rsync-only.csv"
 
-cp /var/db/rpki-client/csv "${TMPDIR}/vrps.csv"
-
 [ -d /var/cache/rpki-client/rsync ] && doas rm -rf /var/cache/rpki-client/rsync
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
@@ -59,7 +57,9 @@ find "${TMPDIR}" -type f -print0 | xargs -0 doas chmod 644
 
 # given the nature of the file and directory layout, using tar
 # over ssh is perhaps faster than using rsync
+set +e
 cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
+set -e
 
 # cleanup
 cd /
