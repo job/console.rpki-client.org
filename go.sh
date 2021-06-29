@@ -28,7 +28,7 @@ sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rsy
 
 [ -d /tmp/rrdp ] && doas mv /tmp/rrdp /var/cache/rpki-client
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -r -v -c 2>&1 | ts)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -v -c 2>&1 | ts)
 
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
@@ -36,7 +36,7 @@ cat > "${TMPDIR}/output.log" << EOF
 # time rpki-client -R -v -j -c
 ${LOG}
 
-# time rpki-client -r -v -c
+# time rpki-client -v -c
 ${LOG_RRDP}
 
 # wc -l vrps-rsync-only.csv vrps-rrdp-rsync.csv
