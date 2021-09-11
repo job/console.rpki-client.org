@@ -4,8 +4,8 @@ set -ev
 
 TMPDIR=$(mktemp -d)
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -v -coj 2>&1 | ts)
-LOG_RSYNC=$(doas /usr/bin/time rpki-client -v -coj -R -d /var/cache/rpki-client-rsync /var/db/rpki-client-rsync 2>&1 | ts)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts)
+LOG_RSYNC=$(doas /usr/bin/time rpki-client -coj -R -d /var/cache/rpki-client-rsync /var/db/rpki-client-rsync 2>&1 | ts)
 
 doas mount_mfs -o nosuid,noperm -s 5G -P /var/cache/rpki-client-rsync swap "${TMPDIR}"
 
@@ -26,10 +26,10 @@ sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vr
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
 
 cat > "${TMPDIR}/output.log" << EOF
-# time rpki-client -v -c -j
+# time rpki-client -c -j
 ${LOG_RRDP}
 
-# time rpki-client -v -c -j -R
+# time rpki-client -R -c -j
 ${LOG_RSYNC}
 
 # wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv
