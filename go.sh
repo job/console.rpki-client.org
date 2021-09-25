@@ -4,10 +4,10 @@ set -ev
 
 TMPDIR=$(mktemp -d)
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts)
+LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts) &
 LOG_RSYNC=$(doas /usr/bin/time rpki-client -coj -R -d /var/cache/rpki-client-rsync /var/db/rpki-client-rsync 2>&1 | ts)
 
-doas mount_mfs -o nosuid,noperm -s 5G -P /var/cache/rpki-client-rsync swap "${TMPDIR}"
+doas mount_mfs -o nosuid,noperm -s 10G -P /var/cache/rpki-client-rsync swap "${TMPDIR}"
 
 doas chown -R job "${TMPDIR}"
 
@@ -45,14 +45,10 @@ cp /home/job/console.rpki-client.org/console.gif "${TMPDIR}/"
 
 wait
 
-find "${TMPDIR}" -type d -print0 | xargs -0 doas chmod 755
-find "${TMPDIR}" -type f -print0 | xargs -0 doas chmod 644
-
-# given the nature of the file and directory layout, using tar
-# over ssh is perhaps faster than using rsync
-set +e
-cd "${TMPDIR}/" && tar cfj - . | ssh chloe.sobornost.net 'cd /var/www/htdocs/console.rpki-client.org/ && tar xfj -'
-set -e
+cd "${TMPDIR}"
+find . -type d -print0 | xargs -0 doas chmod 755
+find . -type f -print0 | xargs -0 doas chmod 644
+cp -rf . /var/www/htdocs/console.rpki-client.org/
 
 # cleanup
 cd /
