@@ -15,7 +15,7 @@
 
 set -ev
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts) &
+LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts)
 LOG_RSYNC=$(doas /usr/bin/time rpki-client -coj -R -d /var/cache/rpki-client-rsync /var/db/rpki-client-rsync 2>&1 | ts)
 
 TMPDIR=$(mktemp -d)
@@ -28,8 +28,6 @@ cd "${TMPDIR}"
 
 # Make HTML for all objects, this is slow...
 find * -type f ! -name '*.html' -print0 | xargs -P18 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
-
-wait
 
 sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rsync-only.csv"
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
