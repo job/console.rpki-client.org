@@ -15,49 +15,94 @@
 
 set -ev
 
-LOG_RRDP=$(doas /usr/bin/time rpki-client -coj 2>&1 | ts)
-LOG_RSYNC=$(doas /usr/bin/time rpki-client -coj -R -d /var/cache/rpki-client-rsync /var/db/rpki-client-rsync 2>&1 | ts)
+MAXPROC=18
+LOG_RRDP=$(mktemp)
+LOG_RSYNC=$(mktemp)
+LIST_OF_DIRS=$(mktemp)
+export HTDOCS="/var/www/htdocs/console.rpki-client.org"
+export RSYNC_CACHE="/var/cache/rpki-client-rsync"
+export ASID_DB="${RSYNC_CACHE}/asid"
 
-TMPDIR=$(mktemp -d)
-doas mount_mfs -o nosuid,noperm -s 10G -P /var/cache/rpki-client-rsync swap "${TMPDIR}"
-doas chown -R job "${TMPDIR}"
-cd "${TMPDIR}"
+doas chown -R _rpki-client ${RSYNC_CACHE}
 
-# make a html file for each ASN with all the ROAs referencing that ASID
-(cd rsync && find * -type f -name '*.roa' -print0 | xargs -r -0 -n1 /home/job/console.rpki-client.org/roa_print.pl) &
-
-# Make HTML for all objects, this is slow...
-find * -type f ! -name '*.html' -print0 | xargs -P18 -r -0 -n1 -J {} sh -c '/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
-
-sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rsync-only.csv"
-sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort > "${TMPDIR}/vrps-rrdp-rsync.csv"
-
-# make the pretty index page
-cat > "${TMPDIR}/output.log" << EOF
-# time rpki-client -c -j
-${LOG_RRDP}
-
-# time rpki-client -R -c -j
-${LOG_RSYNC}
-
-# wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv
-$(cd "${TMPDIR}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
-
-# comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv
-$(cd "${TMPDIR}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
-EOF
-
-/home/job/console.rpki-client.org/rpki_print.pl "${TMPDIR}/output.log" > "${TMPDIR}/index.html"
-cp /home/job/console.rpki-client.org/console.gif "${TMPDIR}/"
+(doas /usr/bin/time rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
+(doas /usr/bin/time rpki-client -coj -R -d ${RSYNC_CACHE} /var/db/rpki-client-rsync 2>&1 | ts > ${LOG_RSYNC}) &
 
 wait
 
-cd "${TMPDIR}"
+doas chown -R job ${RSYNC_CACHE}
+cd ${RSYNC_CACHE}
+
+mkdir -p ${ASID_DB}
+rm -rf ${ASID_DB}/*
+
+cd ${RSYNC_CACHE}/rsync
+find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh
+
+cd ${ASID_DB}
+ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
+
+cd ${RSYNC_CACHE}
+rm -rf ${ASID_DB}
+cat > roas.html << EOF
+<a href="/"><img src="/console.gif" border=0></a><br />
+<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />
+<style>td { border-bottom: 1px solid grey; }</styLE>
+<table>
+<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>
+EOF
+find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
+find . -type f -name '*.all.html' | xargs rm
+find . -type d > ${LIST_OF_DIRS}
+
+( for dir in $(cat ${LIST_OF_DIRS}); do
+	cd ${RSYNC_CACHE}/${dir}
+	if [[ "$(find . -type f -maxdepth 1 ! -name '*.html')" -eq "" ]]; then
+		# empty dir
+		break
+	fi
+	sha256 -h SHA256 *
+	cd ${HTDOCS}/$dir
+	for i in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | \
+		sed 's/:$//'); do
+		echo "$dir/$i"
+	done
+done ) | xargs -P${MAXPROC} -r -n1 -J {} sh -c \
+	'/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
+
+wait
+
+cd ${RSYNC_CACHE}
 find . -type d -print0 | xargs -0 doas chmod 755
 find . -type f -print0 | xargs -0 doas chmod 644
-cp -rf . /var/www/htdocs/console.rpki-client.org/
+# copy all freshly generated HTML and DER files
+rsync -rt . ${HTDOCS}/
+find . -type f -name '*.html' | xargs rm
+
+sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | \
+	sort > "${HTDOCS}/vrps-rrdp-rsync.csv"
+sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | \
+	sort > "${HTDOCS}/vrps-rsync-only.csv"
+
+# make the pretty index page
+cat > "${HTDOCS}/output.log" << EOF
+# time rpki-client -c -j
+$(cat ${LOG_RRDP})
+
+# time rpki-client -R -c -j
+$(cat ${LOG_RSYNC})
+
+# wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv
+$(cd "${HTDOCS}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
+
+# comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv
+$(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
+EOF
+
+/home/job/console.rpki-client.org/rpki_print.pl "${HTDOCS}/output.log" > "${HTDOCS}/index.html"
+cp /home/job/console.rpki-client.org/console.gif "${HTDOCS}/"
 
 # cleanup
-cd /
-doas umount $TMPDIR
-doas rmdir $TMPDIR
+rm ${LOG_RRDP}
+rm ${LOG_RSYNC}
+rm ${LIST_OF_DIRS}
