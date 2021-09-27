@@ -61,7 +61,7 @@ find . -type d > ${LIST_OF_DIRS}
 		# empty dir
 		break
 	fi
-	sha256 -h SHA256 *
+	sha256 -h SHA256 -- *
 	cd ${HTDOCS}/$dir
 	for i in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | \
 		sed 's/:$//'); do
