@@ -62,16 +62,24 @@ sub write_html {
 	my $htmlfp = "../AS" . $roainfo->{'asid'} . ".html";
 	my $allfp = "../" . $roainfo->{'asid'} . ".all.html";
 
-	open($fh, '>', $htmlfp) or die $!;
-	open($fh2, '>', $allfp) or die $!;
-
 	$header = '<a href="/"><img src="/console.gif" border=0></a><br />' . "\n";
 	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
 	$header .= '<style>td { border-bottom: 1px solid grey; }</styLE>' . "\n";
 	$header .= '<table>' . "\n";
 	$header .= '<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>'. "\n";
 
-	print $fh $header;
+	if (-e $htmlfp) {
+		open($fh, '>>', $htmlfp) or die $!;
+	} else {
+		open($fh, '>', $htmlfp) or die $!;
+		print $fh $header;
+	}
+
+	if (-e $allfp) {
+		open($fh2, '>>', $allfp) or die $!;
+	} else {
+		open($fh2, '>', $allfp) or die $!;
+	}
 
 	$html .= "<tr>\n";
 	$html .= '<td valign=top><strong><pre><a href="/rsync/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";

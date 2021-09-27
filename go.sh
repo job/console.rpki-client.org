@@ -13,7 +13,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-set -ev
+set -e
 
 MAXPROC=18
 LOG_RRDP=$(mktemp)
@@ -27,14 +27,13 @@ doas chown -R _rpki-client ${RSYNC_CACHE}
 
 (doas /usr/bin/time rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
 (doas /usr/bin/time rpki-client -coj -R -d ${RSYNC_CACHE} /var/db/rpki-client-rsync 2>&1 | ts > ${LOG_RSYNC}) &
-
 wait
 
 doas chown -R job ${RSYNC_CACHE}
 cd ${RSYNC_CACHE}
 
+rm -rf ${ASID_DB}
 mkdir -p ${ASID_DB}
-rm -rf -- ${ASID_DB}/*
 
 cd ${RSYNC_CACHE}/rsync
 find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh
@@ -53,22 +52,26 @@ cat > roas.html << EOF
 EOF
 find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
 find . -type f -name '*.all.html' | xargs rm
-find . -type d > ${LIST_OF_DIRS}
+find . -type d | sed '1d' > ${LIST_OF_DIRS}
 
-( for dir in $(cat ${LIST_OF_DIRS}); do
-	cd ${RSYNC_CACHE}/${dir}
-	if [[ "$(find . -type f -maxdepth 1 ! -name '*.html')" -eq "" ]]; then
+for repo in $(cat ${LIST_OF_DIRS}); do
+	cd ${RSYNC_CACHE}/${repo}
+	if [ ! "$(find . -type f -maxdepth 1 ! -name '*.html')" ]; then
 		# empty dir
-		break
+		continue
 	fi
-	sha256 -h SHA256 -- *
-	cd ${HTDOCS}/$dir
-	for i in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | \
+	sha256 -h SHA256 -- *.*
+	mkdir -p ${HTDOCS}/${repo}
+	mv SHA256 ${HTDOCS}/${repo}/
+	cd ${HTDOCS}/${repo}
+
+	# find files that changed or were missed in a previous run
+	for fn in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | \
 		sed 's/:$//'); do
-		echo "$dir/$i"
+		echo "${repo}/${fn}"
 	done
-done ) | xargs -P${MAXPROC} -r -n1 -J {} sh -c \
-	'/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html; echo -n .' {}
+done | xargs -P${MAXPROC} -r -n1 -J {} sh -c \
+	'/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html' {}
 
 wait
 
