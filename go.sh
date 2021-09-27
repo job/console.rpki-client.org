@@ -34,7 +34,7 @@ doas chown -R job ${RSYNC_CACHE}
 cd ${RSYNC_CACHE}
 
 mkdir -p ${ASID_DB}
-rm -rf ${ASID_DB}/*
+rm -rf -- ${ASID_DB}/*
 
 cd ${RSYNC_CACHE}/rsync
 find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh
