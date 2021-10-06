@@ -28,6 +28,7 @@ my $testcert = "/usr/local/bin/test-cert";
 my $testroa = "/usr/local/bin/test-roa";
 my $testmft = "/usr/local/bin/test-mft";
 my $testgbr = "/usr/local/bin/test-gbr";
+my $testbgpsec = "/usr/local/bin/test-bgpsec";
 
 # template locations
 my $index_template = "/home/job/console.rpki-client.org/templates/index.html";
@@ -444,6 +445,7 @@ if ($type eq 'roa') {
 } elsif ($type eq 'crl') {
 	print_crl (get_crlinfo $ARGV[0]);
 } elsif ($type eq 'cer') {
+	// XXX: add BGPsec support
 	print_cert (get_certinfo $ARGV[0]);
 } elsif ($type eq 'gbr') {
 	print_gbr (get_gbrinfo $ARGV[0]);
