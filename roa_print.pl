@@ -66,7 +66,7 @@ sub write_html {
 	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";
 	$header .= '<style>td { border-bottom: 1px solid grey; }</styLE>' . "\n";
 	$header .= '<table>' . "\n";
-	$header .= '<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>'. "\n";
+	$header .= '<tr><th>Prefixes</th><th width=20%>asID</th><th>SIA</th></tr>'. "\n";
 
 	if (-e $htmlfp) {
 		open($fh, '>>', $htmlfp) or die $!;
@@ -82,9 +82,9 @@ sub write_html {
 	}
 
 	$html .= "<tr>\n";
-	$html .= '<td valign=top><strong><pre><a href="/rsync/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
-	$html .= '<td valign=top style="text-align:center;"><strong><pre><a href="/AS' . $roainfo->{'asid'} . '.html">AS' . $roainfo->{'asid'} . '</a></pre></strong></td>'."\n";
 	$html .= "<td><pre>$roainfo->{'prefixes'}</pre></td>\n";
+	$html .= '<td valign=top style="text-align:center;"><strong><pre><a href="/AS' . $roainfo->{'asid'} . '.html">AS' . $roainfo->{'asid'} . '</a></pre></strong></td>'."\n";
+	$html .= '<td valign=top><strong><pre><a href="/rsync/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
 	$html .= "</tr>\n";
 
 	print $fh $html;

@@ -360,6 +360,9 @@ sub get_certinfo {
 	my $talfile;
 	$certinfo->{'sia'} = $cert;
 	$certinfo->{'notifyurl'} = '';
+	$certinfo->{'spki'} = '';
+	$certinfo->{'manifest'} = '';
+	$certinfo->{'carepository'} = '';
 
 	if ($cert =~ /^ta\//) {
 		$certinfo->{'root'} = 'Root ';
@@ -397,6 +400,8 @@ sub get_certinfo {
 			$certinfo->{'carepository'} = $1;
 		} elsif (/^Notify URL: (.*)/) {
 			$certinfo->{'notifyurl'} = $1;
+		} elsif (/^BGPsec Subject Public Key Info: (.*)/) {
+			$certinfo->{'spki'} = $1;
 		} elsif (/\s+(.*)/) {
 			$certinfo->{'resources'} .= "    " . $1 . "\n";
 		}
@@ -432,6 +437,7 @@ sub print_cert {
         $templatedata =~ s/{resources}/$certinfo->{'resources'}/g;
         $templatedata =~ s/{cert}/$certinfo->{'cert'}/g;
         $templatedata =~ s/{date}/$date/g;
+        $templatedata =~ s/{spki}/$certinfo->{'spki'}/g;
 
         print $templatedata;
 }

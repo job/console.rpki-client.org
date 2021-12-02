@@ -15,7 +15,7 @@
 
 set -e
 
-MAXPROC=18
+MAXPROC=6
 LOG_RRDP=$(mktemp)
 LOG_RSYNC=$(mktemp)
 LIST_OF_DIRS=$(mktemp)
