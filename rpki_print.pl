@@ -451,7 +451,7 @@ if ($type eq 'roa') {
 } elsif ($type eq 'crl') {
 	print_crl (get_crlinfo $ARGV[0]);
 } elsif ($type eq 'cer') {
-	// XXX: add BGPsec support
+	# XXX: add BGPsec support
 	print_cert (get_certinfo $ARGV[0]);
 } elsif ($type eq 'gbr') {
 	print_gbr (get_gbrinfo $ARGV[0]);
