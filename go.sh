@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2020-2021 Job Snijders <job@sobornost.net>
+# Copyright (c) 2020-2022 Job Snijders <job@sobornost.net>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -46,9 +46,9 @@ rm -rf ${ASID_DB}
 cat > roas.html << EOF
 <a href="/"><img src="/console.gif" border=0></a><br />
 <i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />
-<style>td { border-bottom: 1px solid grey; }</styLE>
+<style>td { border-bottom: 1px solid grey; }</style>
 <table>
-<tr><th>SIA</th><th width=20%>asID</th><th>Prefixes</th></tr>
+<tr><th>Prefixes</th><th width=20%>asID</th><th>Subject Information Access (SIA)</th></tr>
 EOF
 find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
 find . -type f -name '*.all.html' | xargs rm
