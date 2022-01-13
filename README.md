@@ -18,9 +18,9 @@ You have to obtain the TALs yourself, those are not included in this project.
 PEM print utilities
 ===================
 
-The `test-mft`, `test-cert`, `test-roa`, and `test-tal` utilities are part of the
-OpenBSD regression framework. To obtain a copy please downlaod the OpenBSD source
-code tree, update to the latest version using `cvs`.
+The `test-mft`, `test-cert`, `test-roa`, `test-gbr`, and `test-tal` utilities
+are part of the OpenBSD regression framework. To obtain a copy please download
+the OpenBSD source code tree, update to the latest version using `cvs`.
 
 easy way:
 
