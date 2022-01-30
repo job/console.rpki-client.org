@@ -84,7 +84,7 @@ sub write_html {
 	$html .= "<tr>\n";
 	$html .= "<td><pre>$roainfo->{'prefixes'}</pre></td>\n";
 	$html .= '<td valign=top style="text-align:center;"><strong><pre><a href="/AS' . $roainfo->{'asid'} . '.html">AS' . $roainfo->{'asid'} . '</a></pre></strong></td>'."\n";
-	$html .= '<td valign=top><strong><pre><a href="/rsync/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
+	$html .= '<td valign=top><strong><pre><a href="/' . $roainfo->{'sia'} . '.html">' . $roainfo->{'sia'} . '</a></pre></strong></td>' . "\n";
 	$html .= "</tr>\n";
 
 	print $fh $html;

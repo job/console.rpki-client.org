@@ -19,7 +19,7 @@ set -e
 
 cd ${ASID_DB}
 
-ROA_INFO=$(test-roa -v ${RSYNC_CACHE}/rsync/$1)
+ROA_INFO=$(test-roa -v ${RSYNC_CACHE}/$1)
 
 HASH=$(echo "${ROA_INFO}" | sha256 -q)
 

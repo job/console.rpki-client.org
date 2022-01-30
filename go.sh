@@ -13,7 +13,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-set -e
+set -ev
 
 MAXPROC=6
 LOG_RRDP=$(mktemp)
@@ -35,7 +35,8 @@ cd ${RSYNC_CACHE}
 rm -rf ${ASID_DB}
 mkdir -p ${ASID_DB}
 
-cd ${RSYNC_CACHE}/rsync
+cd ${RSYNC_CACHE}/
+rmdir .rsync
 find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh
 
 cd ${ASID_DB}
@@ -52,7 +53,7 @@ cat > roas.html << EOF
 EOF
 find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
 find . -type f -name '*.all.html' | xargs rm
-find . -type d | sed '1d' > ${LIST_OF_DIRS}
+find . -type d | sed '1d' | sed 's/..//' > ${LIST_OF_DIRS}
 
 for repo in $(cat ${LIST_OF_DIRS}); do
 	cd ${RSYNC_CACHE}/${repo}
@@ -60,15 +61,18 @@ for repo in $(cat ${LIST_OF_DIRS}); do
 		# empty dir
 		continue
 	fi
-	sha256 -h SHA256 -- *.*
+	find . ! -name SHA256 -type f -maxdepth 1 | cut -d/ -f2 | xargs sha256 -- > SHA256
 	mkdir -p ${HTDOCS}/${repo}
 	mv SHA256 ${HTDOCS}/${repo}/
-	cd ${HTDOCS}/${repo}
 
+	cd ${HTDOCS}/${repo}
 	# find files that changed or were missed in a previous run
-	for fn in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | \
-		sed 's/:$//'); do
+	for fn in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | sed 's/:$//'); do
 		echo "${repo}/${fn}"
+	done
+	# check if HTML ever was generated
+	for fn in $(cat SHA256 | awk '{ print $2 }' | sed 's/^.//;s/.$//'); do
+		test -f "${fn}.html" || echo "${repo}/${fn}"
 	done
 done | xargs -P${MAXPROC} -r -n1 -J {} sh -c \
 	'/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html' {}

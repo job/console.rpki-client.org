@@ -250,7 +250,7 @@ sub get_mftinfo {
 			s/Authority key identifier: //;
 			$mftinfo->{'aki'} = $_;
 		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
-			$mftinfo->{'aia'} = "/rsync/" . $1;
+			$mftinfo->{'aia'} = "/" . $1;
 		} elsif (/^Manifest Number:/) {
 			s/Manifest Number: //;
 			$mftinfo->{'seqnum'} = $_;
@@ -262,7 +262,7 @@ sub get_mftinfo {
 	}
 	close($CMD);
 
-	if ( exists($ta_tal{$mftinfo->{'aki'}} ) ) {
+	if ( exists( $ta_tal{$mftinfo->{'aki'}} ) ) {
 		$mftinfo->{'aia'} = "/ta/" . $ta_tal{$mftinfo->{'aki'}};
 	}
 
@@ -391,7 +391,7 @@ sub get_certinfo {
 		} elsif (/^Authority key identifier: (.*)/) {
 			$certinfo->{'aki'} = $1;
 		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
-			$certinfo->{'aia'} = "/rsync/" . $1;
+			$certinfo->{'aia'} = "/" . $1;
 		} elsif (/^Manifest: rsync:\/\/(.*)/) {
 			$certinfo->{'manifest'} = $1;
 		} elsif (/^Revocation list: (.*)/) {
@@ -408,7 +408,7 @@ sub get_certinfo {
 	}
 	close($CMD);
 
-	if ( exists($ta_tal{$certinfo->{'aki'}} ) ) {
+	if ( exists( $ta_tal{$certinfo->{'aki'}} ) ) {
 		$certinfo->{'aia'} = "/ta/" . $ta_tal{$certinfo->{'aki'}};
 	}
 
