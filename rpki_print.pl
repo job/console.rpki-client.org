@@ -408,8 +408,8 @@ sub get_certinfo {
 	}
 	close($CMD);
 
-	if ( exists( $ta_tal{$certinfo->{'aki'}} ) ) {
-		$certinfo->{'aia'} = "/ta/" . $ta_tal{$certinfo->{'aki'}};
+	if ( exists( $ta_tal{$certinfo->{'ski'}} ) ) {
+		$certinfo->{'aia'} = "/ta/" . $ta_tal{$certinfo->{'ski'}};
 	}
 
 	return $certinfo;
