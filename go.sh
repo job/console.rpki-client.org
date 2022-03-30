@@ -37,7 +37,14 @@ mkdir -p ${ASID_DB}
 
 cd ${RSYNC_CACHE}/
 rmdir .rsync
-find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh
+
+(find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh) &
+
+date +%s > ${HTDOCS}/dump.tmp
+(find . -type f -print0 | xargs -0 rpki-client -f) >> ${HTDOCS}/dump.tmp && mv ${HTDOCS}/dump.tmp ${HTDOCS}/dump.txt
+rm -f dump.tmp.gz && cat dump.txt | gzip -o dump.tmp.gz && mv dump.tmp.gz dump.txt.gz
+
+wait
 
 cd ${ASID_DB}
 ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
