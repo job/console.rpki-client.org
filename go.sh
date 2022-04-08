@@ -42,7 +42,7 @@ rmdir .rsync
 
 date +%s > ${HTDOCS}/dump.tmp
 (find . -type f -print0 | xargs -0 rpki-client -f) >> ${HTDOCS}/dump.tmp && mv ${HTDOCS}/dump.tmp ${HTDOCS}/dump.txt
-rm -f dump.tmp.gz && cat dump.txt | gzip -o dump.tmp.gz && mv dump.tmp.gz dump.txt.gz
+rm -f ${HTDOCS}/dump.tmp.gz && cat ${HTDOCS}/dump.txt | gzip -o ${HTDOCS}/dump.tmp.gz && mv ${HTDOCS}/dump.tmp.gz ${HTDOCS}/dump.txt.gz
 
 wait
 
