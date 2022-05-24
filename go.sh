@@ -40,9 +40,11 @@ rmdir .rsync
 
 (find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh) &
 
-date +%s > ${HTDOCS}/dump.tmp
-(find . -type f -print0 | xargs -0 rpki-client -f) >> ${HTDOCS}/dump.tmp && mv ${HTDOCS}/dump.tmp ${HTDOCS}/dump.txt
-rm -f ${HTDOCS}/dump.tmp.gz && gzip -k ${HTDOCS}/dump.tmp && mv ${HTDOCS}/dump.tmp.gz ${HTDOCS}/dump.txt.gz
+rm -f ${HTDOCS}/dump.json.tmp
+find * -type f -print0 | xargs -0 rpki-client -d ${RSYNC_CACHE} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp
+rm -f ${HTDOCS}/dump.json.tmp.gz && gzip -k ${HTDOCS}/dump.json.tmp
+mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json && mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
+touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
 
 wait
 
