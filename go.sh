@@ -25,8 +25,8 @@ export ASID_DB="${RSYNC_CACHE}/asid"
 
 doas chown -R _rpki-client ${RSYNC_CACHE}
 
-(doas /usr/bin/time rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
-(doas /usr/bin/time rpki-client -coj -R -d ${RSYNC_CACHE} /var/db/rpki-client-rsync 2>&1 | ts > ${LOG_RSYNC}) &
+(doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
+(doas rpki-client -coj -R -d ${RSYNC_CACHE} /var/db/rpki-client-rsync 2>&1 | ts > ${LOG_RSYNC}) &
 wait
 
 doas chown -R job ${RSYNC_CACHE}
@@ -102,10 +102,10 @@ sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | \
 
 # make the pretty index page
 cat > "${HTDOCS}/output.log" << EOF
-# time rpki-client -c -j
+# rpki-client -c -j
 $(cat ${LOG_RRDP})
 
-# time rpki-client -R -c -j
+# rpki-client -R -c -j
 $(cat ${LOG_RSYNC})
 
 # wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv
