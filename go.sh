@@ -102,16 +102,16 @@ sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | \
 
 # make the pretty index page
 cat > "${HTDOCS}/output.log" << EOF
-# rpki-client -c -j
+<strong># rpki-client -c -j</strong>
 $(cat ${LOG_RRDP})
 
-# rpki-client -R -c -j
+<strong># rpki-client -R -c -j</strong>
 $(cat ${LOG_RSYNC})
 
-# wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv
+<strong># wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
 $(cd "${HTDOCS}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 
-# comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv
+<strong># comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
 $(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 EOF
 
