@@ -38,7 +38,7 @@ mkdir -p ${ASID_DB}
 cd ${RSYNC_CACHE}/
 rmdir .rsync
 
-(find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh) &
+# (find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh) &
 
 rm -f ${HTDOCS}/dump.json.tmp
 find * -type f -print0 | xargs -0 rpki-client -d ${RSYNC_CACHE} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp
@@ -52,16 +52,18 @@ cd ${ASID_DB}
 ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
 
 cd ${RSYNC_CACHE}
-rm -rf ${ASID_DB}
-cat > roas.html << EOF
-<a href="/"><img src="/console.gif" border=0></a><br />
-<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />
-<style>td { border-bottom: 1px solid grey; }</style>
-<table>
-<tr><th>Prefixes</th><th width=20%>asID</th><th>Subject Information Access (SIA)</th></tr>
-EOF
-find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
-find . -type f -name '*.all.html' | xargs rm
+
+# rm -rf ${ASID_DB}
+# cat > roas.html << EOF
+# <a href="/"><img src="/console.gif" border=0></a><br />
+# <i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />
+# <style>td { border-bottom: 1px solid grey; }</style>
+# <table>
+# <tr><th>Prefixes</th><th width=20%>asID</th><th>Subject Information Access (SIA)</th></tr>
+# EOF
+# find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
+# find . -type f -name '*.all.html' | xargs rm
+
 find . -type d | sed '1d' | sed 's/..//' > ${LIST_OF_DIRS}
 
 for repo in $(cat ${LIST_OF_DIRS}); do
