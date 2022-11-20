@@ -162,7 +162,7 @@ sub get_gbrinfo {
 	my $gbr = shift;
 
 	my $gbrinfo;
-	$gbrinfo->{'sia'} = substr $gbr, 6;
+	$gbrinfo->{'sia'} = $gbr;
 
 	# Pipe the CMS through openssl to extract the eContent
 	open(my $CMD, "-|", "$openssl cms -verify -noverify -in $gbr -inform DER -signer $gbr.pem") or die "Can't run $openssl: $!\n";
@@ -187,12 +187,12 @@ sub get_gbrinfo {
 	while(<$CMD>) {
 		chomp;
 		if (/^Subject key identifier: /) {
-			s/Subject key identifier: //;
+			s/Subject key identifier: +//;
 			$gbrinfo->{'ski'} = $_;
 		} elsif (/^Authority key identifier:/) {
-			s/Authority key identifier: //;
+			s/Authority key identifier: +//;
 			$gbrinfo->{'aki'} = $_;
-		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+		} elsif (/^Authority info access: +rsync:\/\/(.*)/) {
 			$gbrinfo->{'aia'} = $1;
 		}
 	}
@@ -244,15 +244,15 @@ sub get_mftinfo {
 	while(<$CMD>) {
 		chomp;
 		if (/^Subject key identifier: /) {
-			s/Subject key identifier: //;
+			s/Subject key identifier: +//;
 			$mftinfo->{'ski'} = $_;
 		} elsif (/^Authority key identifier:/) {
-			s/Authority key identifier: //;
+			s/Authority key identifier: +//;
 			$mftinfo->{'aki'} = $_;
-		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+		} elsif (/^Authority info access: +rsync:\/\/(.*)/) {
 			$mftinfo->{'aia'} = "/" . $1;
 		} elsif (/^Manifest Number:/) {
-			s/Manifest Number: //;
+			s/Manifest Number: +//;
 			$mftinfo->{'seqnum'} = $_;
 		} elsif (/(^\s*[0-9]*:) (.*)/) {
 			$mftinfo->{'files'} .= "$1 <a href=\"$2.html\">$2</a>\n";
@@ -386,21 +386,21 @@ sub get_certinfo {
 	}
 	while(<$CMD>) {
 		chomp;
-		if (/^Subject key identifier: (.*)/) {
+		if (/^Subject key identifier: +(.*)/) {
 			$certinfo->{'ski'} = $1;
-		} elsif (/^Authority key identifier: (.*)/) {
+		} elsif (/^Authority key identifier: +(.*)/) {
 			$certinfo->{'aki'} = $1;
-		} elsif (/^Authority info access: rsync:\/\/(.*)/) {
+		} elsif (/^Authority info access: +rsync:\/\/(.*)/) {
 			$certinfo->{'aia'} = "/" . $1;
-		} elsif (/^Manifest: rsync:\/\/(.*)/) {
+		} elsif (/^Manifest: +rsync:\/\/(.*)/) {
 			$certinfo->{'manifest'} = $1;
-		} elsif (/^Revocation list: (.*)/) {
+		} elsif (/^Revocation list: +(.*)/) {
 			$certinfo->{'crl'} = $1;
-		} elsif (/^caRepository: rsync:\/\/(.*)/) {
+		} elsif (/^caRepository: +rsync:\/\/(.*)/) {
 			$certinfo->{'carepository'} = $1;
-		} elsif (/^Notify URL: (.*)/) {
+		} elsif (/^Notify URL: +(.*)/) {
 			$certinfo->{'notifyurl'} = $1;
-		} elsif (/^BGPsec Subject Public Key Info: (.*)/) {
+		} elsif (/^BGPsec Subject Public Key Info: +(.*)/) {
 			$certinfo->{'spki'} = $1;
 		} elsif (/\s+(.*)/) {
 			$certinfo->{'resources'} .= "    " . $1 . "\n";
