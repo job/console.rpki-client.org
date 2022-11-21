@@ -35,13 +35,13 @@ sub get_roainfo {
 	while(<$f>) {
 		chomp;
 		if (/^Subject key identifier: /) {
-			s/Subject key identifier: //;
+			s/Subject key identifier: +//;
 			$roainfo->{'ski'} = $_;
 		} elsif (/^File: \.\//) {
 			s/^File: ..//;
 			$roainfo->{'sia'} = $_;
-		} elsif (/^Authority key identifier:/) {
-			s/Authority key identifier: //;
+		} elsif (/^Authority key identifier: /) {
+			s/Authority key identifier: +//;
 			$roainfo->{'aki'} = $_;
 		} elsif (/^\s*([0-9]*:.*)/) {
 			$roainfo->{'prefixes'} .= $1 . "\n";

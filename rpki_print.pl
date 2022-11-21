@@ -79,13 +79,13 @@ sub get_roainfo {
 	while(<$CMD>) {
 		chomp;
 		if (/^Subject key identifier: /) {
-			s/Subject key identifier: //;
+			s/Subject key identifier: +//;
 			$roainfo->{'ski'} = $_;
 		} elsif (/^Authority key identifier:/) {
 			s/Authority key identifier: //;
 			$roainfo->{'aki'} = $_;
-		} elsif (/^asID:/) {
-			s/asID: //;
+		} elsif (/^asID: +/) {
+			s/asID: +//;
 			$roainfo->{'asid'} = $_;
 		} elsif (/^\s*[0-9]*:/) {
 			$roainfo->{'prefixes'} .= $_ . "\n";
