@@ -59,8 +59,8 @@ sub write_html {
 	my $header;
 	my $fh;
 	my $fh2;
-	my $htmlfp = "../../../AS" . $roainfo->{'asid'} . ".html";
-	my $allfp = "../../../" . $roainfo->{'asid'} . ".all.html";
+	my $htmlfp = "../../AS" . $roainfo->{'asid'} . ".html";
+	my $allfp = "../../" . $roainfo->{'asid'} . ".all.html";
 
 	$header = '<a href="/"><img src="/console.gif" border=0></a><br />' . "\n";
 	$header .= '<i>Generated at '. $date . ' by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />' . "\n";

@@ -23,7 +23,7 @@ ROA_INFO=$(test-roa -v ${RSYNC_CACHE}/$1)
 
 HASH=$(echo "${ROA_INFO}" | sha256 -q)
 
-ASID=$(echo "${ROA_INFO}" | awk '/^asID: / { print $2 }' | sed 's/^\([0-9]\)\([0-9]\)\(.*\)/\1\/\2\/\1\2\3/')
+ASID=$(echo "${ROA_INFO}" | awk '/^asID: / { print $2 }' | sed 's/^\([0-9]\)\(.*\)/\1\/\1\2/')
 
 mkdir -p ${ASID}
 echo "File: $1" > ${ASID}/${HASH}

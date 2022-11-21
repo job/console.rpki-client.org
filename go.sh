@@ -50,10 +50,7 @@ wait
 
 cd ${ASID_DB}
 for i in *; do cd $i;
-	for j in *; do cd $j;
-		ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
-		cd ..
-	done
+	ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
 	cd ..
 done
 
