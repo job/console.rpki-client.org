@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2020-2021 Job Snijders <job@sobornost.net>
+# Copyright (c) 2020-2022 Job Snijders <job@sobornost.net>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +23,7 @@ ROA_INFO=$(test-roa -v ${RSYNC_CACHE}/$1)
 
 HASH=$(echo "${ROA_INFO}" | sha256 -q)
 
-ASID=$(echo "${ROA_INFO}" | awk '/^asID: / { print $2 }')
+ASID=$(echo "${ROA_INFO}" | awk '/^asID: / { print $2 }' | sed 's/^\([0-9]\)\([0-9]\)\(.*\)/\1\/\2\/\1\2\3/')
 
 mkdir -p ${ASID}
 echo "File: $1" > ${ASID}/${HASH}
