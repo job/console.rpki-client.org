@@ -19,11 +19,10 @@ use File::Basename;
 use OpenBSD::Pledge;
 use OpenBSD::Unveil;
 
-# pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
+pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
 
 chdir("/var/www/htdocs/console.rpki-client.org") || die "Unable to chdir: $!";
 
-unveil("/bin/mkdir", "rx");
 unveil(".", "rwc") || die "Unable to unveil: $!";
 unveil() || die "Unable to unveil again: $!";
 
@@ -37,7 +36,6 @@ while (<>) {
 
 	if (/^File: +(.*)$/) {
 		($name, $path, $type) = fileparse($1, qr/\.[^.]*/);
-		system("/bin/mkdir -p $path");
 		open(FH, '>', $1 . ".html") or die $!;
 		print FH "<img border=0 src='/console.gif' /><br />\n<h3>";
 		if ($type eq ".mft") { print FH "Manifest"; }

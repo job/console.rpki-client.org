@@ -34,19 +34,20 @@ DUMP2=$(mktemp)
 doas cp console.gif "${HTDOCS}/"
 install html.pl ${HTMLWRITER}
 
-(echo doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
-(echo doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
+(doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
+(doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
 
 wait
 
 cd ${CACHEDIR}
 
+find * -type d | sort | uniq | (cd ${HTDOCS}; doas -u www mkdir -p)
 find * -type f > ${FILELIST}
 sed -n 'p;n' ${FILELIST} > ${ODDLIST}
 sed -n 'n;p' ${FILELIST} > ${EVENLIST}
 
-(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www perl ${HTMLWRITER}) &
-(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www perl ${HTMLWRITER}) &
+(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
 (cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP1}) &
 (cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP2}) &
 
