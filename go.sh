@@ -15,98 +15,65 @@
 
 set -ev
 
-MAXPROC=6
+HTMLWRITER="/tmp/html.pl"
+HTDOCS="/var/www/htdocs"
+CACHEDIR="/var/cache/rpki-client-rsync"
+OUTDIR="/var/db/rpki-client-rsync"
+
 LOG_RRDP=$(mktemp)
 LOG_RSYNC=$(mktemp)
-LIST_OF_DIRS=$(mktemp)
-export HTDOCS="/var/www/htdocs/console.rpki-client.org"
-export RSYNC_CACHE="/var/cache/rpki-client-rsync"
-export ASID_DB="${RSYNC_CACHE}/asid"
 
-doas chown -R _rpki-client ${RSYNC_CACHE}
+cp console.gif "${HTDOCS}/"
+cp html.pl ${HTMLWRITER}
 
 (doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
-(doas rpki-client -coj -R -d ${RSYNC_CACHE} /var/db/rpki-client-rsync 2>&1 | ts > ${LOG_RSYNC}) &
+(doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
+
 wait
 
-doas chown -R job ${RSYNC_CACHE}
-cd ${RSYNC_CACHE}
+cd ${CACHEDIR}
 
-rm -rf ${ASID_DB}
-mkdir -p ${ASID_DB}
-
-cd ${RSYNC_CACHE}/
-rmdir .rsync
-
-(find . -type f -name '*.roa' -print0 | xargs -0 -P${MAXPROC} -n1 /home/job/console.rpki-client.org/asid_roa_map.sh) &
+(find * -type f -not -name '*.html' -print0 \
+	| xargs -0 rpki-client -d ${CACHEDIR} -vvf \
+	| doas -u _rpki-client ${HTMLWRITER}
+rsync -xrt * ${HTDOCS} && doas find * -type f -name '*.html' -delete) &
 
 rm -f ${HTDOCS}/dump.json.tmp
-find * -type f -print0 | xargs -0 rpki-client -d ${RSYNC_CACHE} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp
+find * -type f -not -name '*.html' -print0 | xargs -0 rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp
 rm -f ${HTDOCS}/dump.json.tmp.gz && gzip -k ${HTDOCS}/dump.json.tmp
-mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json && mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
+mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
+mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
 touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
 
 wait
 
-cd ${ASID_DB}
-for i in *; do cd $i;
-	ls -1 | xargs -P${MAXPROC} -n1 /home/job/console.rpki-client.org/roa_print.pl
-	cd ..
-done
-
-cd ${RSYNC_CACHE}
-
-rm -rf ${ASID_DB}
-cat > roas.html << EOF
-<a href="/"><img src="/console.gif" border=0></a><br />
-<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i><br /><br />
-<style>td { border-bottom: 1px solid grey; }</style>
-<table>
-<tr><th>Prefixes</th><th width=20%>asID</th><th>Subject Information Access (SIA)</th></tr>
-EOF
-find . -type f -name '*.all.html' | sed 's/..//' | sort -r -n | xargs cat >> roas.html
-find . -type f -name '*.all.html' | xargs rm
-
-find . -type d | sed '1d' | sed 's/..//' > ${LIST_OF_DIRS}
-
-for repo in $(cat ${LIST_OF_DIRS}); do
-	cd ${RSYNC_CACHE}/${repo}
-	if [ ! "$(find . -type f -maxdepth 1 ! -name '*.html')" ]; then
-		# empty dir
-		continue
-	fi
-	find . ! -name SHA256 -type f -maxdepth 1 | cut -d/ -f2 | xargs sha256 -- > SHA256
-	mkdir -p ${HTDOCS}/${repo}
-	mv SHA256 ${HTDOCS}/${repo}/
-
-	cd ${HTDOCS}/${repo}
-	# find files that changed or were missed in a previous run
-	for fn in $(sha256 -q -c SHA256 2>/dev/zero | awk '{ print $2 }' | sed 's/:$//'); do
-		echo "${repo}/${fn}"
-	done
-	# check if HTML ever was generated
-	for fn in $(cat SHA256 | awk '{ print $2 }' | sed 's/^.//;s/.$//'); do
-		test -f "${fn}.html" || echo "${repo}/${fn}"
-	done
-done | xargs -P${MAXPROC} -r -n1 -J {} sh -c \
-	'/home/job/console.rpki-client.org/rpki_print.pl $0 > $0.html' {}
-
-wait
-
-cd ${RSYNC_CACHE}
-find . -type d -print0 | xargs -0 doas chmod 755
-find . -type f -print0 | xargs -0 doas chmod 644
-# copy all freshly generated HTML and DER files
-rsync -rt . ${HTDOCS}/
-find . -type f -name '*.html' | xargs rm
-
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | \
 	sort > "${HTDOCS}/vrps-rrdp-rsync.csv"
-sed 1d /var/db/rpki-client-rsync/csv | sed 's/,[0-9]*$//' | \
+sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | \
 	sort > "${HTDOCS}/vrps-rsync-only.csv"
 
 # make the pretty index page
-cat > "${HTDOCS}/output.log" << EOF
+cat > "${HTDOCS}/index.html" << EOF
+<img border=0 src="/console.gif" />
+<br />
+<pre>
+All RPKI VRPs observed by this validator in <a href="/vrps.csv">csv</a> or <a href="/vrps.json">json</a> format.
+A full JSON dump of all currently observed objects in the RPKI: <a href="/dump.json">dump.json</a> (<a href="/dump.json.gz">gzipped</a>).
+Archived full copies of the global RPKI: <a href="https://www.rpkiviews.org/">rpkiviews.org</a>.
+
+For example, you can view all VRPs related to AS 8283 at <a href="/AS8283.html">/AS8283.html</a>.
+You can substitute the digits in the above URL with any ASN referenced as asID.
+
+Trust Anchors:
+<a href="/ta/afrinic/AfriNIC.cer.html">/ta/afrinic/AfriNIC.cer</a>
+<a href="/ta/apnic/apnic-rpki-root-iana-origin.cer.html">/ta/apnic/apnic-rpki-root-iana-origin.cer</a>
+<a href="/ta/arin/arin-rpki-ta.cer.html">/ta/arin/arin-rpki-ta.cer</a>
+<a href="/ta/lacnic/rta-lacnic-rpki.cer.html">/ta/lacnic/lacnic-rpki.cer</a>
+<a href="/ta/ripe/ripe-ncc-ta.cer.html">/ta/ripe/ripe-ncc-ta.cer</a>
+
+<strong>Note:</strong> <i>rpki-client outputs information about errorenous objects and problems with repositories.
+Any errors in the below log should be solved by CA operators!</i>
+
 <strong># rpki-client -c -j</strong>
 $(cat ${LOG_RRDP})
 
@@ -118,12 +85,14 @@ $(cd "${HTDOCS}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 
 <strong># comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
 $(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
+</pre>
+<br />
+<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i>
+<br />
+<i>Contact: job@openbsd.org</i>
 EOF
-
-/home/job/console.rpki-client.org/rpki_print.pl "${HTDOCS}/output.log" > "${HTDOCS}/index.html"
-cp /home/job/console.rpki-client.org/console.gif "${HTDOCS}/"
 
 # cleanup
 rm ${LOG_RRDP}
 rm ${LOG_RSYNC}
-rm ${LIST_OF_DIRS}
+rm ${HTMLWRITER}
