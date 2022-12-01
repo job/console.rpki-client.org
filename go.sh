@@ -16,12 +16,16 @@
 set -ev
 
 HTMLWRITER="/tmp/html.pl"
-HTDOCS="/var/www/htdocs"
+HTDOCS="/var/www/htdocs/console.rpki-client.org"
 CACHEDIR="/var/cache/rpki-client-rsync"
 OUTDIR="/var/db/rpki-client-rsync"
 
 LOG_RRDP=$(mktemp)
 LOG_RSYNC=$(mktemp)
+
+FILELIST=$(mktemp)
+ODDLIST=$(mktemp)
+EVENLIST=$(mktemp)
 
 cp console.gif "${HTDOCS}/"
 cp html.pl ${HTMLWRITER}
@@ -33,19 +37,26 @@ wait
 
 cd ${CACHEDIR}
 
-(find * -type f -not -name '*.html' -print0 \
-	| xargs -0 rpki-client -d ${CACHEDIR} -vvf \
-	| doas -u _rpki-client ${HTMLWRITER}
-rsync -xrt * ${HTDOCS} && doas find * -type f -name '*.html' -delete) &
+rm -f ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.tmp2
+find * -type f -not -name '*.html' > ${FILELIST}
+sed -n 'p;n' ${FILELIST} > ${ODDLIST}
+sed -n 'n;p' ${FILELIST} > ${EVENLIST}
 
-rm -f ${HTDOCS}/dump.json.tmp
-find * -type f -not -name '*.html' -print0 | xargs -0 rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp
+(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u _rpki-client ${HTMLWRITER}) &
+(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u _rpki-client ${HTMLWRITER}) &
+(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp) &
+(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp2) &
+
+wait
+
+rsync -xrt --info=progress2 * ${HTDOCS}
+doas find * -type f -name '*.html' -delete
+
+cat ${HTDOCS}/dump.json.tmp2 >> ${HTDOCS}/dump.json.tmp && rm ${HTDOCS}/dump.json.tmp2
 rm -f ${HTDOCS}/dump.json.tmp.gz && gzip -k ${HTDOCS}/dump.json.tmp
 mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
 mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
 touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
-
-wait
 
 sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | \
 	sort > "${HTDOCS}/vrps-rrdp-rsync.csv"
@@ -93,6 +104,6 @@ $(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 EOF
 
 # cleanup
-rm ${LOG_RRDP}
-rm ${LOG_RSYNC}
+rm ${LOG_RRDP} ${LOG_RSYNC}
+rm ${FILELIST} ${ODDLIST} ${EVENLIST}
 rm ${HTMLWRITER}

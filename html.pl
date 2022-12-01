@@ -44,6 +44,7 @@ while (<>) {
 		elsif ($type eq ".gbr") { print FH "Ghostbusters Record"; }
 		elsif ($type eq ".asa") { print FH "Autonomous System Provider Authorization"; }
 		elsif ($type eq ".cer") { print FH "Certificate"; }
+		elsif ($type eq ".tak") { print FH "Trust Anchor Key"; }
 		print FH "\n</h3>\n<pre>" . "\n";
 		print FH '$ cd ' . $path . "\n\n";
 		print FH '$ <strong>rpki-client -vvf ' . $name . $type . "</strong>\n";
