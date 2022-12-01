@@ -19,10 +19,11 @@ use File::Basename;
 use OpenBSD::Pledge;
 use OpenBSD::Unveil;
 
-pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
+# pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
 
-chdir("/var/cache/rpki-client-rsync") || die "Unable to chdir: $!";
+chdir("/var/www/htdocs/console.rpki-client.org") || die "Unable to chdir: $!";
 
+unveil("/bin/mkdir", "rx");
 unveil(".", "rwc") || die "Unable to unveil: $!";
 unveil() || die "Unable to unveil again: $!";
 
@@ -36,6 +37,7 @@ while (<>) {
 
 	if (/^File: +(.*)$/) {
 		($name, $path, $type) = fileparse($1, qr/\.[^.]*/);
+		system("/bin/mkdir -p $path");
 		open(FH, '>', $1 . ".html") or die $!;
 		print FH "<img border=0 src='/console.gif' /><br />\n<h3>";
 		if ($type eq ".mft") { print FH "Manifest"; }
@@ -48,7 +50,7 @@ while (<>) {
 		print FH "\n</h3>\n<pre>" . "\n";
 		print FH '$ cd ' . $path . "\n\n";
 		print FH '$ <strong>rpki-client -vvf ' . $name . $type . "</strong>\n";
-		$_ =~ s|($1)$|$name$type (<a href="$1">download</a>)|;
+		$_ =~ s|($1)$|$name$type (<a href="$name$type">download</a>)|;
 	}
 
 #	if (/^asID: +(.*)$/) {

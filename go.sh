@@ -15,7 +15,6 @@
 
 set -ev
 
-HTMLWRITER="/tmp/html.pl"
 HTDOCS="/var/www/htdocs/console.rpki-client.org"
 CACHEDIR="/var/cache/rpki-client-rsync"
 OUTDIR="/var/db/rpki-client-rsync"
@@ -23,48 +22,50 @@ OUTDIR="/var/db/rpki-client-rsync"
 LOG_RRDP=$(mktemp)
 LOG_RSYNC=$(mktemp)
 
+HTMLWRITER=$(mktemp)
+
 FILELIST=$(mktemp)
 ODDLIST=$(mktemp)
 EVENLIST=$(mktemp)
 
-cp console.gif "${HTDOCS}/"
-cp html.pl ${HTMLWRITER}
+DUMP1=$(mktemp)
+DUMP2=$(mktemp)
 
-(doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
-(doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
+doas cp console.gif "${HTDOCS}/"
+install html.pl ${HTMLWRITER}
+
+(echo doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
+(echo doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
 
 wait
 
 cd ${CACHEDIR}
 
-rm -f ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.tmp2
-find * -type f -not -name '*.html' > ${FILELIST}
+find * -type f > ${FILELIST}
 sed -n 'p;n' ${FILELIST} > ${ODDLIST}
 sed -n 'n;p' ${FILELIST} > ${EVENLIST}
 
-(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u _rpki-client ${HTMLWRITER}) &
-(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u _rpki-client ${HTMLWRITER}) &
-(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp) &
-(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${HTDOCS}/dump.json.tmp2) &
+(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www perl ${HTMLWRITER}) &
+(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www perl ${HTMLWRITER}) &
+(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP1}) &
+(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP2}) &
+
+doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
 
 wait
 
-rsync -xrt --info=progress2 * ${HTDOCS}
-doas find * -type f -name '*.html' -delete
+doas -u www rm -f ${HTDOCS}/dump.json.tmp
+cat ${DUMP1} ${DUMP2} | doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/null
+doas -u www rm -f ${HTDOCS}/dump.json.tmp.gz && doas -u www gzip -k ${HTDOCS}/dump.json.tmp
+doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
+doas -u www mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
+doas -u www touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
 
-cat ${HTDOCS}/dump.json.tmp2 >> ${HTDOCS}/dump.json.tmp && rm ${HTDOCS}/dump.json.tmp2
-rm -f ${HTDOCS}/dump.json.tmp.gz && gzip -k ${HTDOCS}/dump.json.tmp
-mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
-mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
-touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
-
-sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | \
-	sort > "${HTDOCS}/vrps-rrdp-rsync.csv"
-sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | \
-	sort > "${HTDOCS}/vrps-rsync-only.csv"
+sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee "${HTDOCS}/vrps-rrdp-rsync.csv" > /dev/zero
+sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee "${HTDOCS}/vrps-rsync-only.csv" > /dev/zero
 
 # make the pretty index page
-cat > "${HTDOCS}/index.html" << EOF
+doas -u www tee "${HTDOCS}/index.html" > /dev/zero << EOF
 <img border=0 src="/console.gif" />
 <br />
 <pre>
@@ -107,3 +108,4 @@ EOF
 rm ${LOG_RRDP} ${LOG_RSYNC}
 rm ${FILELIST} ${ODDLIST} ${EVENLIST}
 rm ${HTMLWRITER}
+rm ${DUMP1} ${DUMP2}
