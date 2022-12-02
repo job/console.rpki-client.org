@@ -41,7 +41,7 @@ wait
 
 cd ${CACHEDIR}
 
-find * -type d | sort | uniq | (cd ${HTDOCS}; doas -u www mkdir -p)
+find * -type d | sort | uniq | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
 find * -type f > ${FILELIST}
 sed -n 'p;n' ${FILELIST} > ${ODDLIST}
 sed -n 'n;p' ${FILELIST} > ${EVENLIST}
