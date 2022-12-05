@@ -26,10 +26,12 @@ chdir("/var/www/htdocs/console.rpki-client.org") || die "Unable to chdir: $!";
 unveil(".", "rwc") || die "Unable to unveil: $!";
 unveil() || die "Unable to unveil again: $!";
 
-my $type;
+my $asid;
 my $fn;
 my $name;
 my $path;
+my @roa_ips;
+my $type;
 
 while (<>) {
 	chomp;
@@ -46,14 +48,14 @@ while (<>) {
 		elsif ($type eq ".cer") { print FH "Certificate"; }
 		elsif ($type eq ".tak") { print FH "Trust Anchor Key"; }
 		print FH "\n</h3>\n<pre>" . "\n";
-		print FH '$ cd ' . $path . "\n\n";
-		print FH '$ <strong>rpki-client -vvf ' . $name . $type . "</strong>\n";
+		print FH '$ <strong>rpki-client -vvf ' . $path . $name . $type . "</strong>\n";
 		$_ =~ s|($1)$|$name$type (<a href="$name$type">download</a>)|;
 	}
 
-#	if (/^asID: +(.*)$/) {
-#		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
-#	}
+	if ($type eq ".roa" and /^asID: +(.*)$/) {
+		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
+		$asid = $1;
+	}
 
 	if (/rsync:\/\/(.*)$/ and /[a-z]$/) {
 		$_ =~ s|rsync://(.*)$|rsync://<a href="/$1.html">$1</a>|;
@@ -71,12 +73,39 @@ while (<>) {
 		}
 	}
 
+	if ($type eq ".roa") {
+		if (/^ +[0-9]+: [0-9].*[0-9]$/) {
+			push(@roa_ips, $_);
+		}
+	}
+
 	if (/^--$/ or eof()) {
+		if ($type eq ".roa") {
+			if (-e "asid/AS" . $asid . ".html") {
+				open(ROA, '>>', "asid/AS" . $asid . ".html") or die $!;
+			} else {
+				open(ROA, '>', "asid/AS" . $asid . ".html") or die $!;
+				print ROA "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
+				print ROA "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i><br /><br />";
+				print ROA "<style>td { border-bottom: 1px solid grey; }</style>\n";
+				print ROA "<table>\n<tr><th>Prefixes</th><th width=20%>asID</th><th>SIA</th></tr>\n";
+			}
+			print ROA "<tr><td><pre>";
+			foreach (@roa_ips) {
+				print ROA "$_\n";
+			}
+			print ROA "</pre></td>\n";
+			print ROA "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
+			print ROA "<td valign=top><strong><pre><a href=\"" . $path . $name . $type . ".html\">" . $path . $name . $type . "</a></pre></strong></td>\n</tr>\n";
+			close(ROA);
+		}
+
 		print FH "</pre>\n";
-		print FH "<i>Generated at " . localtime();
-		print FH " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
+		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
 		close(FH);
 		$type = "";
+		$asid = "";
+		@roa_ips = ();
 		next;
 	}
 

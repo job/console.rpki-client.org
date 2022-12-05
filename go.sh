@@ -16,6 +16,7 @@
 set -ev
 
 HTDOCS="/var/www/htdocs/console.rpki-client.org"
+ASIDDB="${HTDOCS}/asid"
 CACHEDIR="/var/cache/rpki-client-rsync"
 OUTDIR="/var/db/rpki-client-rsync"
 
@@ -32,6 +33,7 @@ DUMP1=$(mktemp)
 DUMP2=$(mktemp)
 
 doas cp console.gif "${HTDOCS}/"
+doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
 install html.pl ${HTMLWRITER}
 
 (doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
@@ -54,6 +56,8 @@ sed -n 'n;p' ${FILELIST} > ${EVENLIST}
 doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
 
 wait
+
+doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 doas -u www rm -f ${HTDOCS}/dump.json.tmp
 cat ${DUMP1} ${DUMP2} | doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/null
@@ -110,3 +114,4 @@ rm ${LOG_RRDP} ${LOG_RSYNC}
 rm ${FILELIST} ${ODDLIST} ${EVENLIST}
 rm ${HTMLWRITER}
 rm ${DUMP1} ${DUMP2}
+doas rm -rf ${ASIDDB}
