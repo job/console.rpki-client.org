@@ -20,17 +20,15 @@ ASIDDB="${HTDOCS}/asid"
 CACHEDIR="/var/cache/rpki-client-rsync"
 OUTDIR="/var/db/rpki-client-rsync"
 
-LOG_RRDP=$(mktemp)
-LOG_RSYNC=$(mktemp)
-
-HTMLWRITER=$(mktemp)
-
-FILELIST=$(mktemp)
-ODDLIST=$(mktemp)
-EVENLIST=$(mktemp)
-
-DUMP1=$(mktemp)
-DUMP2=$(mktemp)
+WD="$(mktemp -d)"
+LOG_RRDP="$(mktemp -p ${WD})"
+LOG_RSYNC="$(mktemp -p ${WD})"
+HTMLWRITER="$(mktemp -p ${WD})"
+FILELIST="$(mktemp -p ${WD})"
+ODDLIST="$(mktemp -p ${WD})"
+EVENLIST="$(mktemp -p ${WD})"
+DUMP1="$(mktemp -p ${WD})"
+DUMP2="$(mktemp -p ${WD})"
 
 doas cp console.gif "${HTDOCS}/"
 doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
@@ -110,8 +108,5 @@ $(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 EOF
 
 # cleanup
-rm ${LOG_RRDP} ${LOG_RSYNC}
-rm ${FILELIST} ${ODDLIST} ${EVENLIST}
-rm ${HTMLWRITER}
-rm ${DUMP1} ${DUMP2}
-doas rm -rf ${ASIDDB}
+rm -rf "${WD}"
+doas rm -rf "${ASIDDB}"
