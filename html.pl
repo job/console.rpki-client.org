@@ -98,14 +98,13 @@ while (<>) {
 			print ROA "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
 			print ROA "<td valign=top><strong><pre><a href=\"" . $path . $name . $type . ".html\">" . $path . $name . $type . "</a></pre></strong></td>\n</tr>\n";
 			close(ROA);
+			$asid = "";
+			@roa_ips = ();
 		}
-
 		print FH "</pre>\n";
 		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
 		close(FH);
 		$type = "";
-		$asid = "";
-		@roa_ips = ();
 		next;
 	}
 
