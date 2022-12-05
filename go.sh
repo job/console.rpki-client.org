@@ -20,10 +20,10 @@ ASIDDB="${HTDOCS}/asid"
 CACHEDIR="/var/cache/rpki-client-rsync"
 OUTDIR="/var/db/rpki-client-rsync"
 
+HTMLWRITER="$(mktemp)"
 WD="$(mktemp -d)"
 LOG_RRDP="$(mktemp -p ${WD})"
 LOG_RSYNC="$(mktemp -p ${WD})"
-HTMLWRITER="$(mktemp -p ${WD})"
 FILELIST="$(mktemp -p ${WD})"
 ODDLIST="$(mktemp -p ${WD})"
 EVENLIST="$(mktemp -p ${WD})"
@@ -109,4 +109,5 @@ EOF
 
 # cleanup
 rm -rf "${WD}"
+rm "${HTMLWRITER}"
 doas rm -rf "${ASIDDB}"
