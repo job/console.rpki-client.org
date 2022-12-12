@@ -102,7 +102,7 @@ $(cd "${HTDOCS}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 $(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 </pre>
 <br />
-<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i>
+<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>, hosted by <a href="https://www.fastly.com">Fastly</a> and <a href="https://www.digitalocean.com">Digital Ocean</a>.</i>
 <br />
 <i>Contact: job@openbsd.org</i>
 EOF
