@@ -25,10 +25,7 @@ WD="$(mktemp -d)"
 LOG_RRDP="$(mktemp -p ${WD})"
 LOG_RSYNC="$(mktemp -p ${WD})"
 FILELIST="$(mktemp -p ${WD})"
-ODDLIST="$(mktemp -p ${WD})"
-EVENLIST="$(mktemp -p ${WD})"
-DUMP1="$(mktemp -p ${WD})"
-DUMP2="$(mktemp -p ${WD})"
+DUMP="$(mktemp -p ${WD})"
 
 doas cp console.gif "${HTDOCS}/"
 doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
@@ -43,22 +40,18 @@ cd ${CACHEDIR}
 
 find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
 find * -type f > ${FILELIST}
-sed -n 'p;n' ${FILELIST} > ${ODDLIST}
-sed -n 'n;p' ${FILELIST} > ${EVENLIST}
 
-(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-(cat ${ODDLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP1}) &
-(cat ${EVENLIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP2}) &
-
-doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
+(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP}) &
 
 wait
+
+doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
 
 doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 doas -u www rm -f ${HTDOCS}/dump.json.tmp
-cat ${DUMP1} ${DUMP2} | doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/null
+cat ${DUMP} | doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/null
 doas -u www rm -f ${HTDOCS}/dump.json.tmp.gz && doas -u www gzip -k ${HTDOCS}/dump.json.tmp
 doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
 doas -u www mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
