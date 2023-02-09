@@ -50,7 +50,7 @@ while (<>) {
 		elsif ($type eq ".tak") { print FH "Trust Anchor Key"; }
 		print FH "\n</h3>\n<pre>" . "\n";
 		print FH '$ <strong>rpki-client -vvf ' . $path . $name . $type . "</strong>\n";
-		$_ =~ s|($1)$|$name$type (<a href="$name$type">download</a>)|;
+		$_ =~ s|($1)$|$name$type (<a href="$name$type">raw</a>, <a href="$name$type.json">json</a>)|;
 	}
 
 	if ($type eq ".roa" and /^asID: +(.*)$/) {

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2020-2022 Job Snijders <job@sobornost.net>
+# Copyright (c) 2020-2023 Job Snijders <job@sobornost.net>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,51 +17,75 @@ set -ev
 
 HTDOCS="/var/www/htdocs/console.rpki-client.org"
 ASIDDB="${HTDOCS}/asid"
-CACHEDIR="/var/cache/rpki-client-rsync"
-OUTDIR="/var/db/rpki-client-rsync"
+CACHEDIR="/var/cache/rpki-client"
+OUTDIR="/var/db/rpki-client"
+RSYNC_CACHEDIR="/var/cache/rpki-client-rsync"
+RSYNC_OUTDIR="/var/db/rpki-client-rsync"
 
 HTMLWRITER="$(mktemp)"
+JSONWRITER="$(mktemp)"
 WD="$(mktemp -d)"
 LOG_RRDP="$(mktemp -p ${WD})"
 LOG_RSYNC="$(mktemp -p ${WD})"
 FILELIST="$(mktemp -p ${WD})"
 DUMP="$(mktemp -p ${WD})"
+SHA256LIST="$(mktemp -p ${WD})"
+DIFFLIST="$(mktemp -p ${WD})"
 
-doas cp console.gif "${HTDOCS}/"
+doas cp console.gif footer.html "${HTDOCS}/"
 doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
 install html.pl ${HTMLWRITER}
+install json.pl ${JSONWRITER}
 
-(doas rpki-client -coj 2>&1 | ts > ${LOG_RRDP}) &
-(doas rpki-client -coj -R -d ${CACHEDIR} ${OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
-
+(doas rpki-client -coj    -d ${CACHEDIR}       ${OUTDIR}       2>&1 | ts > ${LOG_RRDP})  &
+(doas rpki-client -coj -R -d ${RSYNC_CACHEDIR} ${RSYNC_OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
 wait
 
-cd ${CACHEDIR}
+cd ${CACHEDIR}/
+
+prep_vp() {
+	doas install -o www /var/db/rpki-client/$1 ${HTDOCS}/vrps.$1.tmp
+	doas -u www gzip -k ${HTDOCS}/vrps.$1.tmp
+	doas -u www mv ${HTDOCS}/vrps.$1.tmp ${HTDOCS}/vrps.$1
+	doas -u www mv ${HTDOCS}/vrps.$1.tmp.gz ${HTDOCS}/vrps.$1.gz
+	doas -u www touch ${HTDOCS}/vrps.$1 ${HTDOCS}/vrps.$1.gz
+}
+
+prep_vp csv
+prep_vp json
 
 find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
-find * -type f > ${FILELIST}
+find * -type f | tee ${FILELIST} | xargs sha256 -r | sort > ${SHA256LIST}
 
-(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -j -f | jq -c '.' > ${DUMP}) &
+if [ -f ${HTDOCS}/index.SHA256 ]; then
+	comm -2 -3 ${SHA256LIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' | sort > ${DIFFLIST}
+	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
+else
+	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
+fi
 
 wait
 
-doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
+doas install -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
 
+doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
 doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
-doas -u www rm -f ${HTDOCS}/dump.json.tmp
-cat ${DUMP} | doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/null
-doas -u www rm -f ${HTDOCS}/dump.json.tmp.gz && doas -u www gzip -k ${HTDOCS}/dump.json.tmp
-doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
-doas -u www mv ${HTDOCS}/dump.json.tmp.gz ${HTDOCS}/dump.json.gz
-doas -u www touch ${HTDOCS}/dump.json ${HTDOCS}/dump.json.gz
+cd ${HTDOCS}/
 
-sed 1d /var/db/rpki-client/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee "${HTDOCS}/vrps-rrdp-rsync.csv" > /dev/zero
-sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee "${HTDOCS}/vrps-rsync-only.csv" > /dev/zero
+cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp > /dev/null
+doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
+doas -u www mv dump.json.tmp dump.json
+doas -u www mv dump.json.tmp.gz dump.json.gz
+doas -u www touch dump.json dump.json.gz
+
+sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero
+sed 1d ${RSYNC_OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rsync-only.csv > /dev/zero
 
 # make the pretty index page
-doas -u www tee "${HTDOCS}/index.html" > /dev/zero << EOF
+doas -u www tee index.html > /dev/zero << EOF
 <img border=0 src="/console.gif" />
 <br />
 <pre>
@@ -89,13 +113,13 @@ $(cat ${LOG_RRDP})
 $(cat ${LOG_RSYNC})
 
 <strong># wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
-$(cd "${HTDOCS}" && wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
+$(wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 
 <strong># comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
-$(cd "${HTDOCS}" && comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
+$(comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 </pre>
 <br />
-<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>, hosted by <a href="https://www.fastly.com">Fastly</a> and <a href="https://www.digitalocean.com">Digital Ocean</a>.</i>
+<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>$(cat footer.html).</i>
 <br />
 <i>Contact: job@openbsd.org</i>
 EOF
@@ -104,3 +128,4 @@ EOF
 rm -rf "${WD}"
 rm "${HTMLWRITER}"
 doas rm -rf "${ASIDDB}"
+cd -

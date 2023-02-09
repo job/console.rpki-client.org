@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -ev
+
+cd /home/job/console.rpki-client.org
+
+while true; do
+        time ./go.sh 2>&1 | ts
+        date
+        sleep 10
+done
