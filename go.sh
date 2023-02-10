@@ -75,8 +75,8 @@ doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./
 cd ${HTDOCS}/
 
 cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp | egrep '"roa"|"aspa"' | doas -u www ${ASIDWRITER}
-doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
 echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat dump.json.tmp | wc -l)'}' | doas -u www tee -a dump.json.tmp
+doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
 doas -u www mv dump.json.tmp dump.json
 doas -u www mv dump.json.tmp.gz dump.json.gz
 doas -u www touch dump.json dump.json.gz
