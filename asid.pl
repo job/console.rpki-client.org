@@ -18,6 +18,7 @@ use warnings;
 use JSON;
 use OpenBSD::Pledge;
 use OpenBSD::Unveil;
+use Sys::Hostname;
 
 pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
 
@@ -48,7 +49,7 @@ while (<>) {
 	} else {
 		open(FH, '>', "asid/AS" . $asid . ".html") or die $!;
 		print FH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
-		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i><br /><br />";
+		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
 		print FH "<style>td { border-bottom: 1px solid grey; }</style>\n";
 		print FH "<table>\n<tr><th>Prefixes/Providers</th><th width=20%>asID</th><th>SIA</th></tr>\n";
 		}

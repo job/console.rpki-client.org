@@ -18,6 +18,7 @@ use warnings;
 use File::Basename;
 use OpenBSD::Pledge;
 use OpenBSD::Unveil;
+use Sys::Hostname;
 
 pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
 
@@ -76,7 +77,7 @@ while (<>) {
 
 	if (/^--$/ or eof()) {
 		print FH "</pre>\n";
-		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
+		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . "</i>\n";
 		close(FH);
 		$type = "";
 		next;
