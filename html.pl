@@ -74,18 +74,6 @@ while (<>) {
 		}
 	}
 
-	if ($type eq ".roa") {
-		if (/^ +[0-9]+: [0-9].*[0-9]$/) {
-			push(@roa_ips, $_);
-		}
-	}
-
-	if ($type eq ".asa") {
-		if (/^ +[0-9]+: AS: [0-9]+$/) {
-			push(@aspa_providers, $_);
-		}
-	}
-
 	if (/^--$/ or eof()) {
 		print FH "</pre>\n";
 		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
