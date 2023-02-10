@@ -24,6 +24,7 @@ RSYNC_OUTDIR="/var/db/rpki-client-rsync"
 
 HTMLWRITER="$(mktemp)"
 JSONWRITER="$(mktemp)"
+ASIDWRITER="$(mktemp)"
 WD="$(mktemp -d)"
 LOG_RRDP="$(mktemp -p ${WD})"
 LOG_RSYNC="$(mktemp -p ${WD})"
@@ -36,6 +37,7 @@ doas cp console.gif footer.html "${HTDOCS}/"
 doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
 install html.pl ${HTMLWRITER}
 install json.pl ${JSONWRITER}
+install asid.pl ${ASIDWRITER}
 
 (doas rpki-client -coj    -d ${CACHEDIR}       ${OUTDIR}       2>&1 | ts > ${LOG_RRDP})  &
 (doas rpki-client -coj -R -d ${RSYNC_CACHEDIR} ${RSYNC_OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
@@ -68,18 +70,17 @@ fi
 
 wait
 
-doas install -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
-
 doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
-doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 cd ${HTDOCS}/
 
-cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp > /dev/null
+cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp | egrep '"roa"|"aspa"' | doas -u www ${ASIDWRITER}
 doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
 doas -u www mv dump.json.tmp dump.json
 doas -u www mv dump.json.tmp.gz dump.json.gz
 doas -u www touch dump.json dump.json.gz
+doas install -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
+doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero
 sed 1d ${RSYNC_OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rsync-only.csv > /dev/zero
@@ -126,6 +127,6 @@ EOF
 
 # cleanup
 rm -rf "${WD}"
-rm "${HTMLWRITER}" "${JSONWRITER}"
+rm "${HTMLWRITER}" "${JSONWRITER}" "${ASIDWRITER}"
 doas rm -rf "${ASIDDB}"
 cd -

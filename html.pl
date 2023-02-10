@@ -26,12 +26,9 @@ chdir("/var/www/htdocs/console.rpki-client.org") || die "Unable to chdir: $!";
 unveil(".", "rwc") || die "Unable to unveil: $!";
 unveil() || die "Unable to unveil again: $!";
 
-my $asid;
 my $fn;
 my $name;
 my $path;
-my @roa_ips;
-my @aspa_providers;
 my $type;
 
 while (<>) {
@@ -55,12 +52,10 @@ while (<>) {
 
 	if ($type eq ".roa" and /^asID: +(.*)$/) {
 		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
-		$asid = $1;
 	}
 
 	if ($type eq ".asa" and /^Customer AS: +(.*)$/) {
 		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
-		$asid = $1;
 	}
 
 	if (/rsync:\/\/(.*)$/ and /[a-z]$/) {
@@ -92,41 +87,6 @@ while (<>) {
 	}
 
 	if (/^--$/ or eof()) {
-		if ($type eq ".roa" || $type eq ".asa") {
-			if (-e "asid/AS" . $asid . ".html") {
-				open(ASFH, '>>', "asid/AS" . $asid . ".html") or die $!;
-			} else {
-				open(ASFH, '>', "asid/AS" . $asid . ".html") or die $!;
-				print ASFH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
-				print ASFH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i><br /><br />";
-				print ASFH "<style>td { border-bottom: 1px solid grey; }</style>\n";
-				print ASFH "<table>\n<tr><th>Prefixes</th><th width=20%>asID</th><th>SIA</th></tr>\n";
-			}
-		}
-		if ($type eq ".roa") {
-			print ASFH "<tr><td><pre>";
-			foreach (@roa_ips) {
-				print ASFH "$_\n";
-			}
-			print ASFH "</pre></td>\n";
-			print ASFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
-			print ASFH "<td valign=top><strong><pre><a href=\"" . $path . $name . $type . ".html\">" . $path . $name . $type . "</a></pre></strong></td>\n</tr>\n";
-			close(ASFH);
-			$asid = "";
-			@roa_ips = ();
-		}
-		if ($type eq ".asa") {
-			print ASFH "<tr><td><pre>";
-			foreach (@aspa_providers) {
-				print ASFH "$_\n";
-			}
-			print ASFH "</pre></td>\n";
-			print ASFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
-			print ASFH "<td valign=top><strong><pre><a href=\"" . $path . $name . $type . ".html\">" . $path . $name . $type . "</a></pre></strong></td>\n</tr>\n";
-			close(ASFH);
-			$asid = "";
-			@aspa_providers = ();
-		}
 		print FH "</pre>\n";
 		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a>.</i>\n";
 		close(FH);
