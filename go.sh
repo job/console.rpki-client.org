@@ -126,6 +126,6 @@ EOF
 
 # cleanup
 rm -rf "${WD}"
-rm "${HTMLWRITER}"
+rm "${HTMLWRITER}" "${JSONWRITER}"
 doas rm -rf "${ASIDDB}"
 cd -
