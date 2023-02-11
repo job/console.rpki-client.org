@@ -108,10 +108,10 @@ Trust Anchors:
 <strong>Note:</strong> <i>rpki-client outputs information about errorenous objects and problems with repositories.
 Any errors in the below log should be solved by CA operators!</i>
 
-<strong># rpki-client -c -j</strong>
+<strong># TZ=Etc/UTC rpki-client -c -j</strong>
 $(cat ${LOG_RRDP})
 
-<strong># rpki-client -R -c -j</strong>
+<strong># TZ=Etc/UTC rpki-client -R -c -j</strong>
 $(cat ${LOG_RSYNC})
 
 <strong># wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv</strong>
