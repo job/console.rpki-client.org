@@ -46,7 +46,7 @@ wait
 cd ${CACHEDIR}/
 
 prep_vp() {
-	doas install -o www /var/db/rpki-client/$1 ${HTDOCS}/vrps.$1.tmp
+	doas install -m 644 -o www /var/db/rpki-client/$1 ${HTDOCS}/vrps.$1.tmp
 	doas -u www gzip -k ${HTDOCS}/vrps.$1.tmp
 	doas -u www mv ${HTDOCS}/vrps.$1.tmp ${HTDOCS}/vrps.$1
 	doas -u www mv ${HTDOCS}/vrps.$1.tmp.gz ${HTDOCS}/vrps.$1.gz
@@ -80,7 +80,7 @@ doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
 doas -u www mv dump.json.tmp dump.json
 doas -u www mv dump.json.tmp.gz dump.json.gz
 doas -u www touch dump.json dump.json.gz
-doas install -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
+doas install -m 644 -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
 doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero
