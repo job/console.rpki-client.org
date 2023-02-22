@@ -77,7 +77,7 @@ while (<>) {
 		print AOFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
 		print AOFH "<td><pre>";
 		foreach my $aspa (@{$record->{'provider_set'}}) {
-			print AOFH "Provider AS " . $aspa->{'asid'};
+			print AOFH "Provider AS: " . $aspa->{'asid'};
 			if (exists($aspa->{'afi_limit'})) {
 				print AOFH " (" . $aspa->{'afi_limit'} . " only)";
 			}
@@ -88,7 +88,7 @@ while (<>) {
 		close(AOFH);
 
 		foreach my $aspa (@{$record->{'provider_set'}}) {
-			print FH "Provider AS " . $aspa->{'asid'};
+			print FH "Provider AS: " . $aspa->{'asid'};
 			if (exists($aspa->{'afi_limit'})) {
 				print FH " (" . $aspa->{'afi_limit'} . " only)";
 			}
