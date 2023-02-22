@@ -33,7 +33,9 @@ my $record;
 while (<>) {
 	$record = decode_json($_);
 
-	if ($record->{'type'} ne "roa" and $record->{'type'} ne "aspa") {
+	if ($record->{'type'} ne "roa" and
+	    $record->{'type'} ne "aspa" and
+	    $record->{'type'} ne "router_key") {
 		next;
 	}
 
@@ -42,6 +44,9 @@ while (<>) {
 	}
 	if ($record->{'type'} eq "aspa") {
 		$asid = $record->{'customer_asid'};
+	}
+	if ($record->{'type'} eq "router_key") {
+		$asid = $record->{'subordinate_resources'}[0]->{'asid'};
 	}
 
 	if (-e "asid/AS" . $asid . ".html") {
@@ -94,6 +99,25 @@ while (<>) {
 			}
 			print FH "\n";
 		}
+	}
+
+	if ($record->{'type'} eq "bgpsec") {
+		if (-e "asid/bgpsec.html") {
+			open(BOFH, '>>', "asid/bgpsec.html") or die $!;
+		} else {
+			open(BOFH, '>', "asid/bgpsec.html") or die $!;
+			print BOFH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
+			print BOFH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
+			print BOFH "<style>td { border-bottom: 1px solid grey; }</style>\n";
+			print BOFH "<table>\n<tr><th>SIA</th><th width=20%>ASID</th><th>Subject Key Identifier</th></tr>\n";
+		}
+		print BOFH "<tr>\n";
+		print BOFH "<td valign=top><strong><pre><a href=\"/" . $record->{'file'} . ".html\">" . $record->{'file'} . "</a></pre></strong></td>\n";
+		print BOFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
+		print BOFH "<td><pre>" . $record->{'ski'} . "</pre></td>\n";
+		print BOFH "</tr>\n";
+
+		close(BOFH);
 	}
 
 	print FH "</pre></td>\n";
