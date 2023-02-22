@@ -101,7 +101,7 @@ while (<>) {
 		}
 	}
 
-	if ($record->{'type'} eq "bgpsec") {
+	if ($record->{'type'} eq "router_key") {
 		if (-e "asid/bgpsec.html") {
 			open(BOFH, '>>', "asid/bgpsec.html") or die $!;
 		} else {
