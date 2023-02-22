@@ -98,6 +98,8 @@ Archived full copies of the global RPKI: <a href="https://www.rpkiviews.org/">rp
 For example, you can view all VRPs related to AS 8283 at <a href="/AS8283.html">/AS8283.html</a>.
 You can substitute the digits in the above URL with any ASN referenced as asID.
 
+Listings of all currently valid <a href="/aspa.html">ASPA</a> objects and <a href="/bgpsec.html">BGPSec</a> router keys.
+
 Trust Anchors:
 <a href="/ta/afrinic/AfriNIC.cer.html">/ta/afrinic/AfriNIC.cer</a>
 <a href="/ta/apnic/apnic-rpki-root-iana-origin.cer.html">/ta/apnic/apnic-rpki-root-iana-origin.cer</a>
