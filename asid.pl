@@ -52,7 +52,7 @@ while (<>) {
 		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
 		print FH "<style>td { border-bottom: 1px solid grey; }</style>\n";
 		print FH "<table>\n<tr><th>Prefixes/Providers</th><th width=20%>asID</th><th>SIA</th></tr>\n";
-		}
+	}
 
 	print FH "<tr><td><pre>";
 
@@ -63,6 +63,31 @@ while (<>) {
 	}
 
 	if ($record->{'type'} eq "aspa") {
+		if (-e "asid/aspa.html") {
+			open(AOFH, '>>', "asid/aspa.html") or die $!;
+		} else {
+			open(AOFH, '>', "asid/aspa.html") or die $!;
+			print AOFH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
+			print AOFH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
+			print AOFH "<style>td { border-bottom: 1px solid grey; }</style>\n";
+			print AOFH "<table>\n<tr><th>SIA</th><th width=20%>Customer AS</th><th>Provider Set</th></tr>\n";
+		}
+		print AOFH "<tr><td><pre>";
+
+		print AOFH "<td valign=top><strong><pre><a href=\"/" . $record->{'file'} . ".html\">" . $record->{'file'} . "</a></pre></strong></td>\n</tr>\n";
+		print AOFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
+		foreach my $aspa (@{$record->{'provider_set'}}) {
+			print AOFH "Provider AS " . $aspa->{'asid'};
+			if (exists($aspa->{'afi_limit'})) {
+				print AOFH " (" . $aspa->{'afi_limit'} . " only)";
+			}
+			print AOFH "\n";
+		}
+
+		print AOFH "</pre></td>\n";
+
+		close(AOFH);
+
 		foreach my $aspa (@{$record->{'provider_set'}}) {
 			print FH "Provider AS " . $aspa->{'asid'};
 			if (exists($aspa->{'afi_limit'})) {
