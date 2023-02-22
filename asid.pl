@@ -72,10 +72,10 @@ while (<>) {
 			print AOFH "<style>td { border-bottom: 1px solid grey; }</style>\n";
 			print AOFH "<table>\n<tr><th>SIA</th><th width=20%>Customer AS</th><th>Provider Set</th></tr>\n";
 		}
-		print AOFH "<tr><td><pre>";
-
-		print AOFH "<td valign=top><strong><pre><a href=\"/" . $record->{'file'} . ".html\">" . $record->{'file'} . "</a></pre></strong></td>\n</tr>\n";
+		print AOFH "<tr>\n";
+		print AOFH "<td valign=top><strong><pre><a href=\"/" . $record->{'file'} . ".html\">" . $record->{'file'} . "</a></pre></strong></td>\n";
 		print AOFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
+		print AOFH "<td><pre>";
 		foreach my $aspa (@{$record->{'provider_set'}}) {
 			print AOFH "Provider AS " . $aspa->{'asid'};
 			if (exists($aspa->{'afi_limit'})) {
@@ -83,8 +83,7 @@ while (<>) {
 			}
 			print AOFH "\n";
 		}
-
-		print AOFH "</pre></td>\n";
+		print AOFH "</pre></td>\n</tr>\n";
 
 		close(AOFH);
 
