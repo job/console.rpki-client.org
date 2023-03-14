@@ -22,16 +22,19 @@ OUTDIR="/var/db/rpki-client"
 RSYNC_CACHEDIR="/var/cache/rpki-client-rsync"
 RSYNC_OUTDIR="/var/db/rpki-client-rsync"
 
-HTMLWRITER="$(mktemp)"
-JSONWRITER="$(mktemp)"
-ASIDWRITER="$(mktemp)"
+HTMLWRITER="$(mktemp -p /tmp html.XXXXXXXXXX)"
+JSONWRITER="$(mktemp -p /tmp json.XXXXXXXXXX)"
+ASIDWRITER="$(mktemp -p /tmp asid.XXXXXXXXXX)"
 WD="$(mktemp -d)"
-LOG_RRDP="$(mktemp -p ${WD})"
-LOG_RSYNC="$(mktemp -p ${WD})"
-FILELIST="$(mktemp -p ${WD})"
-DUMP="$(mktemp -p ${WD})"
-SHA256LIST="$(mktemp -p ${WD})"
-DIFFLIST="$(mktemp -p ${WD})"
+LOG_RRDP="$(mktemp -p ${WD} rrdplog.XXXXXXXXXX)"
+LOG_RSYNC="$(mktemp -p ${WD} rsynclog.XXXXXXXXXX)"
+ALLFILES="$(mktemp -p ${WD} allfiles.XXXXXXXXXX)"
+FILELIST="$(mktemp -p ${WD} filelist.XXXXXXXXXX)"
+HASHFILELIST="$(mktemp -p ${WD} sha256list.XXXXXXXXXX)"
+DIFFLIST="$(mktemp -p ${WD} difflist.XXXXXXXXXX)"
+INVALIDFILELIST="$(mktemp -p ${WD} invalidfilelist.XXXXXXXXXX)"
+INVALIDHASHFILELIST="$(mktemp -p ${WD} invalidhashfilelist.XXXXXXXXXX)"
+INVALIDDIFFLIST="$(mktemp -p ${WD} invaliddifflist.XXXXXXXXXX)"
 
 doas cp console.gif footer.html "${HTDOCS}/"
 doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
@@ -57,17 +60,30 @@ prep_vp csv
 prep_vp json
 
 find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
-find * -type f | tee ${FILELIST} | xargs sha256 -r | sort > ${SHA256LIST}
+find * -type f | sort | tee ${FILELIST} | xargs sha256 -r | sort > ${HASHFILELIST}
+(cd ${HTDOCS}; find . -type f -not -name '*.html' -not -name '*.json' -not -name 'index.*' -not -name '*.gz' -not -name '*.csv' -not -name '*.gif') \
+	| sed -e 's,^\./,,' | sort | uniq > ${ALLFILES}
+comm -1 -3 ${FILELIST} ${ALLFILES} > ${INVALIDFILELIST}
+(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs sha256 -r) | sort > ${INVALIDHASHFILELIST}
 
 if [ -f ${HTDOCS}/index.SHA256 ]; then
-	comm -2 -3 ${SHA256LIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' | sort > ${DIFFLIST}
+	comm -2 -3 ${HASHFILELIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' | sort > ${DIFFLIST}
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
 else
 	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
 	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
 fi
+wait
 
+if [ -f ${HTDOCS}/index.old.SHA256 ]; then
+	comm -2 -3 ${INVALIDHASHFILELIST} ${HTDOCS}/index.old.SHA256 | awk '{print $2}' | sort > ${INVALIDDIFFLIST}
+	(cd ${HTDOCS}; cat ${INVALIDDIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+	(cd ${HTDOCS}; cat ${INVALIDDIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
+else
+	(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
+	(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
+fi
 wait
 
 doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
@@ -80,7 +96,9 @@ doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
 doas -u www mv dump.json.tmp dump.json
 doas -u www mv dump.json.tmp.gz dump.json.gz
 doas -u www touch dump.json dump.json.gz
-doas install -m 644 -o www ${SHA256LIST} ${HTDOCS}/index.SHA256
+doas install -m 644 -o www ${HASHFILELIST} ${HTDOCS}/index.SHA256
+doas install -m 644 -o www ${INVALIDHASHFILELIST} ${HTDOCS}/index.old.SHA256
+
 doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 
 sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero

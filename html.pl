@@ -69,6 +69,10 @@ while (<>) {
 		print FH "\n";
 	}
 
+	if (/^Validation:\s+(Failed.*)$/) {
+		$_ =~ s|($1)|<font color=red>$1</font>|;
+	}
+
 	if ($type eq ".mft") {
 		if (/^.*[0-9]: ([^ ]+) \(hash: .*/) {
 			$_ =~ s|($1)|<a href="$1.html">$1</a>|;
