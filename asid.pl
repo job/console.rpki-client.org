@@ -81,7 +81,7 @@ while (<>) {
 		print AOFH "<td valign=top><strong><pre><a href=\"/" . $record->{'file'} . ".html\">" . $record->{'file'} . "</a></pre></strong></td>\n";
 		print AOFH "<td valign=top style=\"text-align:center;\"><strong><pre><a href=\"/AS" . $asid . ".html\">AS" . $asid . "</a></pre></strong></td>\n";
 		print AOFH "<td><pre>";
-		foreach my $pas (@{$record->{'provider_set'}}) {
+		foreach my $pas (@{$record->{'providers'}}) {
 			print AOFH "Provider AS: " . $pas . "\n";
 			print FH "Provider AS: " . $pas . "\n";
 		}
