@@ -61,7 +61,7 @@ prep_vp json
 
 find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
 find * -type f | sort | tee ${FILELIST} | xargs sha256 -r | sort > ${HASHFILELIST}
-(cd ${HTDOCS}; find . -type f -not -name '*.html' -not -name '*.json' -not -name 'index.*' -not -name '*.gz' -not -name '*.csv' -not -name '*.gif') \
+(cd ${HTDOCS}; find . -type f -not -name 'lost+found' -not -name '*.html' -not -name '*.json' -not -name 'index.*' -not -name '*.gz' -not -name '*.csv' -not -name '*.gif') \
 	| sed -e 's,^\./,,' | sort | uniq > ${ALLFILES}
 comm -1 -3 ${FILELIST} ${ALLFILES} > ${INVALIDFILELIST}
 (cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs sha256 -r) | sort > ${INVALIDHASHFILELIST}
