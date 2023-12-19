@@ -109,7 +109,7 @@ doas -u www tee index.html > /dev/zero << EOF
 <img border=0 src="/console.gif" />
 <br />
 <pre>
-All RPKI VRPs observed by this validator in <a href="/vrps.csv">csv</a> or <a href="/vrps.json">json</a> format.
+All validated RPKI payloads observed by this instance are available in <a href="/rpki.csv">csv</a> and <a href="/rpki.json">json</a> format.
 A full JSON dump of all currently observed objects in the RPKI: <a href="/dump.json">dump.json</a> (<a href="/dump.json.gz">gzipped</a>).
 Archived full copies of the global RPKI: <a href="https://www.rpkiviews.org/">rpkiviews.org</a>.
 
