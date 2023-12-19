@@ -49,11 +49,13 @@ wait
 cd ${CACHEDIR}/
 
 prep_vp() {
-	doas install -m 644 -o www /var/db/rpki-client/$1 ${HTDOCS}/vrps.$1.tmp
-	doas -u www gzip -k ${HTDOCS}/vrps.$1.tmp
-	doas -u www mv ${HTDOCS}/vrps.$1.tmp ${HTDOCS}/vrps.$1
-	doas -u www mv ${HTDOCS}/vrps.$1.tmp.gz ${HTDOCS}/vrps.$1.gz
-	doas -u www touch ${HTDOCS}/vrps.$1 ${HTDOCS}/vrps.$1.gz
+	doas install -m 644 -o www /var/db/rpki-client/$1 ${HTDOCS}/rpki.$1.tmp
+	doas -u www gzip -k ${HTDOCS}/rpki.$1.tmp
+	doas -u www mv ${HTDOCS}/rpki.$1.tmp ${HTDOCS}/rpki.$1
+	doas -u www mv ${HTDOCS}/rpki.$1.tmp.gz ${HTDOCS}/rpki.$1.gz
+	doas -u www touch ${HTDOCS}/rpki.$1 ${HTDOCS}/rpki.$1.gz
+	doas -u www ln -f ${HTDOCS}/rpki.$1 ${HTDOCS}/vrps.$1
+	doas -u www ln -f ${HTDOCS}/rpki.$1.gz ${HTDOCS}/vrps.$1.gz
 }
 
 prep_vp csv
