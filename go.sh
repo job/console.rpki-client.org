@@ -49,7 +49,7 @@ wait
 cd ${CACHEDIR}/
 
 prep_vp() {
-	doas install -m 644 -o www /var/db/rpki-client/$1 ${HTDOCS}/rpki.$1.tmp
+	doas install -m 644 -o www ${OUTDIR}/$1 ${HTDOCS}/rpki.$1.tmp
 	doas -u www gzip -k ${HTDOCS}/rpki.$1.tmp
 	doas -u www mv ${HTDOCS}/rpki.$1.tmp ${HTDOCS}/rpki.$1
 	doas -u www mv ${HTDOCS}/rpki.$1.tmp.gz ${HTDOCS}/rpki.$1.gz
@@ -69,7 +69,9 @@ comm -1 -3 ${FILELIST} ${ALLFILES} > ${INVALIDFILELIST}
 (cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs sha256 -r) | sort > ${INVALIDHASHFILELIST}
 
 if [ -f ${HTDOCS}/index.SHA256 ]; then
-	comm -2 -3 ${HASHFILELIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' | sort > ${DIFFLIST}
+	comm -2 -3 ${HASHFILELIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' > ${DIFFLIST}
+	fgrep .crl ${DIFFLIST} | xargs -n1 dirname | xargs -J % find % -type f > ${DIFFLIST}.tmp
+	cat ${DIFFLIST}.tmp | sort | uniq > ${DIFFLIST} && rm ${DIFFLIST}.tmp
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
 else
