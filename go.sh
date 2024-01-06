@@ -70,7 +70,7 @@ comm -1 -3 ${FILELIST} ${ALLFILES} > ${INVALIDFILELIST}
 
 if [ -f ${HTDOCS}/index.SHA256 ]; then
 	comm -2 -3 ${HASHFILELIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' > ${DIFFLIST}
-	fgrep .crl ${DIFFLIST} | xargs -n1 dirname | xargs -J % find % -type f > ${DIFFLIST}.tmp
+	fgrep .mft ${DIFFLIST} | xargs -n1 dirname | xargs -J % find % -type f > ${DIFFLIST}.tmp
 	cat ${DIFFLIST}.tmp | sort | uniq > ${DIFFLIST} && rm ${DIFFLIST}.tmp
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
 	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
