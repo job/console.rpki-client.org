@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2020-2023 Job Snijders <job@sobornost.net>
+# Copyright (c) 2020-2025 Job Snijders <job@sobornost.net>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -25,6 +25,7 @@ RSYNC_OUTDIR="/var/db/rpki-client-rsync"
 HTMLWRITER="$(mktemp -p /tmp html.XXXXXXXXXX)"
 JSONWRITER="$(mktemp -p /tmp json.XXXXXXXXXX)"
 ASIDWRITER="$(mktemp -p /tmp asid.XXXXXXXXXX)"
+
 WD="$(mktemp -d)"
 LOG_RRDP="$(mktemp -p ${WD} rrdplog.XXXXXXXXXX)"
 LOG_RSYNC="$(mktemp -p ${WD} rsynclog.XXXXXXXXXX)"
@@ -36,24 +37,21 @@ INVALIDFILELIST="$(mktemp -p ${WD} invalidfilelist.XXXXXXXXXX)"
 INVALIDHASHFILELIST="$(mktemp -p ${WD} invalidhashfilelist.XXXXXXXXXX)"
 INVALIDDIFFLIST="$(mktemp -p ${WD} invaliddifflist.XXXXXXXXXX)"
 
-doas cp console.gif footer.html "${HTDOCS}/"
-doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
-install html.pl ${HTMLWRITER}
-install json.pl ${JSONWRITER}
-install asid.pl ${ASIDWRITER}
-
 (doas rpki-client -coj    -d ${CACHEDIR}       ${OUTDIR}       2>&1 | ts > ${LOG_RRDP})  &
 (doas rpki-client -coj -R -d ${RSYNC_CACHEDIR} ${RSYNC_OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
 wait
 
-cd ${CACHEDIR}/
+doas cp console.gif footer.html "${HTDOCS}/"
+doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
+
+install html.pl ${HTMLWRITER}
+install json.pl ${JSONWRITER}
+install asid.pl ${ASIDWRITER}
 
 prep_vp() {
-	doas install -m 644 -o www ${OUTDIR}/$1 ${HTDOCS}/rpki.$1.tmp
-	doas -u www gzip -k ${HTDOCS}/rpki.$1.tmp
-	doas -u www mv ${HTDOCS}/rpki.$1.tmp ${HTDOCS}/rpki.$1
-	doas -u www mv ${HTDOCS}/rpki.$1.tmp.gz ${HTDOCS}/rpki.$1.gz
-	doas -u www touch ${HTDOCS}/rpki.$1 ${HTDOCS}/rpki.$1.gz
+	doas install -m 644 -o www ${OUTDIR}/$1 ${HTDOCS}/rpki.$1
+	doas -u www gzip -fkS tmp ${HTDOCS}/rpki.$1
+	doas -u www mv ${HTDOCS}/rpki.$1.tmp ${HTDOCS}/rpki.$1.gz
 	doas -u www ln -f ${HTDOCS}/rpki.$1 ${HTDOCS}/vrps.$1
 	doas -u www ln -f ${HTDOCS}/rpki.$1.gz ${HTDOCS}/vrps.$1.gz
 }
@@ -61,11 +59,23 @@ prep_vp() {
 prep_vp csv
 prep_vp json
 
+cd ${CACHEDIR}/
+
 find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
 find * -type f | sort | tee ${FILELIST} | xargs sha256 -r | sort > ${HASHFILELIST}
-(cd ${HTDOCS}; find . -type f -not -name 'lost+found' -not -name '*.html' -not -name '*.json' -not -name 'index.*' -not -name '*.gz' -not -name '*.csv' -not -name '*.gif') \
+
+(cd ${HTDOCS};
+	find . -type f -not -name 'lost+found' \
+		-not -name '*.html' \
+		-not -name '*.json' \
+		-not -name 'index.*' \
+		-not -name '*.gz' \
+		-not -name '*.csv' \
+		-not -name '*.gif') \
 	| sed -e 's,^\./,,' | sort | uniq > ${ALLFILES}
-comm -1 -3 ${FILELIST} ${ALLFILES} > ${INVALIDFILELIST}
+
+comm -1 -3 ${FILELIST} ${ALLFILES} | sort > ${INVALIDFILELIST}
+
 (cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs sha256 -r) | sort > ${INVALIDHASHFILELIST}
 
 if [ -f ${HTDOCS}/index.SHA256 ]; then
@@ -90,16 +100,19 @@ else
 fi
 wait
 
-doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ./ /var/www/htdocs/console.rpki-client.org/
+# while in cachedir
+doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ${CACHEDIR}/ ${HTDOCS}/
 
 cd ${HTDOCS}/
 
 cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp | egrep '"router_key"|"roa"|"aspa"' | doas -u www ${ASIDWRITER}
-echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat dump.json.tmp | wc -l)'}' | doas -u www tee -a dump.json.tmp
-doas -u www rm -f dump.json.tmp.gz && doas -u www gzip -k dump.json.tmp
+echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat dump.json.tmp | wc -l)'}' | \
+	doas -u www tee -a dump.json.tmp
+
 doas -u www mv dump.json.tmp dump.json
-doas -u www mv dump.json.tmp.gz dump.json.gz
-doas -u www touch dump.json dump.json.gz
+doas -u www gzip -fkS tmp dump.json
+doas -u www mv dump.json.tmp dump.json.gz
+
 doas install -m 644 -o www ${HASHFILELIST} ${HTDOCS}/index.SHA256
 doas install -m 644 -o www ${INVALIDHASHFILELIST} ${HTDOCS}/index.old.SHA256
 
