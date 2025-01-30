@@ -48,10 +48,10 @@ while (<STDIN>) {
 	if ($record->{'type'} eq "roa") {
 		$asid = $record->{'vrps'}[0]->{'asid'};
 	}
-	if ($record->{'type'} eq "aspa") {
+	elsif ($record->{'type'} eq "aspa") {
 		$asid = $record->{'customer_asid'};
 	}
-	if ($record->{'type'} eq "router_key") {
+	elsif ($record->{'type'} eq "router_key") {
 		$asid = $record->{'subordinate_resources'}[0]->{'asid'};
 	}
 
@@ -72,8 +72,7 @@ while (<STDIN>) {
 			print FH $vrp->{'prefix'} . " maxlen: " . $vrp->{'maxlen'} . "\n";
 		}
 	}
-
-	if ($record->{'type'} eq "aspa") {
+	elsif ($record->{'type'} eq "aspa") {
 		if (-e "aspa.html") {
 			open(AOFH, '>>', "aspa.html") or die $!;
 		} else {
@@ -95,8 +94,7 @@ while (<STDIN>) {
 
 		close(AOFH);
 	}
-
-	if ($record->{'type'} eq "router_key") {
+	elsif ($record->{'type'} eq "router_key") {
 		if (-e "bgpsec.html") {
 			open(BOFH, '>>', "bgpsec.html") or die $!;
 		} else {
