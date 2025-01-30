@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright (c) 2023 Job Snijders <job@sobornost.net>
+# Copyright (c) 2023-2025 Job Snijders <job@sobornost.net>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -13,25 +13,31 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-use strict;
-use warnings;
+use v5.36;
+use autodie;
+
 use JSON;
 use OpenBSD::Pledge;
 use OpenBSD::Unveil;
 use Sys::Hostname;
 
-pledge(qw(cpath rpath wpath unveil)) || die "Unable to pledge: $!";
-
-chdir("/var/www/htdocs/console.rpki-client.org") || die "Unable to chdir: $!";
-
-unveil(".", "rwc") || die "Unable to unveil: $!";
-unveil() || die "Unable to unveil again: $!";
-
 my $asid;
 my $record;
 
-while (<>) {
-	$record = decode_json($_);
+pledge(qw(cpath rpath wpath unveil)) or die "Unable to pledge: $!";
+
+chdir($ARGV[0]);
+
+unveil(".", "rwc") or die "Unable to unveil: $!";
+unveil() or die "Unable to unveil again: $!";
+
+if (!(-d "asid")) {
+	mkdir "asid";
+}
+chdir("asid");
+
+while (<STDIN>) {
+	$record = decode_json($_) or die "unable to decode JSON: $!";
 
 	if ($record->{'type'} ne "roa" and
 	    $record->{'type'} ne "aspa" and
@@ -49,10 +55,10 @@ while (<>) {
 		$asid = $record->{'subordinate_resources'}[0]->{'asid'};
 	}
 
-	if (-e "asid/AS" . $asid . ".html") {
-		open(FH, '>>', "asid/AS" . $asid . ".html") or die $!;
+	if (-e "AS" . $asid . ".html") {
+		open(FH, '>>', "AS" . $asid . ".html") or die $!;
 	} else {
-		open(FH, '>', "asid/AS" . $asid . ".html") or die $!;
+		open(FH, '>', "AS" . $asid . ".html") or die $!;
 		print FH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
 		print FH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
 		print FH "<style>td { border-bottom: 1px solid grey; }</style>\n";
@@ -68,10 +74,10 @@ while (<>) {
 	}
 
 	if ($record->{'type'} eq "aspa") {
-		if (-e "asid/aspa.html") {
-			open(AOFH, '>>', "asid/aspa.html") or die $!;
+		if (-e "aspa.html") {
+			open(AOFH, '>>', "aspa.html") or die $!;
 		} else {
-			open(AOFH, '>', "asid/aspa.html") or die $!;
+			open(AOFH, '>', "aspa.html") or die $!;
 			print AOFH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
 			print AOFH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
 			print AOFH "<style>td { border-bottom: 1px solid grey; }</style>\n";
@@ -91,10 +97,10 @@ while (<>) {
 	}
 
 	if ($record->{'type'} eq "router_key") {
-		if (-e "asid/bgpsec.html") {
-			open(BOFH, '>>', "asid/bgpsec.html") or die $!;
+		if (-e "bgpsec.html") {
+			open(BOFH, '>>', "bgpsec.html") or die $!;
 		} else {
-			open(BOFH, '>', "asid/bgpsec.html") or die $!;
+			open(BOFH, '>', "bgpsec.html") or die $!;
 			print BOFH "<a href=\"/\"><img src=\"/console.gif\" border=0></a><br />\n";
 			print BOFH "<i>Generated at " . localtime() . " by <a href=\"https://www.rpki-client.org/\">rpki-client</a> on " . hostname() . ".</i><br /><br />";
 			print BOFH "<style>td { border-bottom: 1px solid grey; }</style>\n";

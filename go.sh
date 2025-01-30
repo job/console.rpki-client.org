@@ -13,39 +13,29 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-set -ev
+set -euxo pipefail
 
 HTDOCS="/var/www/htdocs/console.rpki-client.org"
-ASIDDB="${HTDOCS}/asid"
 CACHEDIR="/var/cache/rpki-client"
+ASIDDB="${CACHEDIR}/asid"
 OUTDIR="/var/db/rpki-client"
 RSYNC_CACHEDIR="/var/cache/rpki-client-rsync"
 RSYNC_OUTDIR="/var/db/rpki-client-rsync"
 
-HTMLWRITER="$(mktemp -p /tmp html.XXXXXXXXXX)"
-JSONWRITER="$(mktemp -p /tmp json.XXXXXXXXXX)"
-ASIDWRITER="$(mktemp -p /tmp asid.XXXXXXXXXX)"
-
 WD="$(mktemp -d)"
+chmod +rx "${WD}"
+
 LOG_RRDP="$(mktemp -p ${WD} rrdplog.XXXXXXXXXX)"
 LOG_RSYNC="$(mktemp -p ${WD} rsynclog.XXXXXXXXXX)"
-ALLFILES="$(mktemp -p ${WD} allfiles.XXXXXXXXXX)"
-FILELIST="$(mktemp -p ${WD} filelist.XXXXXXXXXX)"
-HASHFILELIST="$(mktemp -p ${WD} sha256list.XXXXXXXXXX)"
-DIFFLIST="$(mktemp -p ${WD} difflist.XXXXXXXXXX)"
-INVALIDFILELIST="$(mktemp -p ${WD} invalidfilelist.XXXXXXXXXX)"
-INVALIDHASHFILELIST="$(mktemp -p ${WD} invalidhashfilelist.XXXXXXXXXX)"
-INVALIDDIFFLIST="$(mktemp -p ${WD} invaliddifflist.XXXXXXXXXX)"
+ASIDWRITER="$(mktemp -p ${WD} asid.XXXXXXXXXX)"
 
+# run the RRDP+rsync and rsync-only instances
 (doas rpki-client -coj    -d ${CACHEDIR}       ${OUTDIR}       2>&1 | ts > ${LOG_RRDP})  &
 (doas rpki-client -coj -R -d ${RSYNC_CACHEDIR} ${RSYNC_OUTDIR} 2>&1 | ts > ${LOG_RSYNC}) &
 wait
 
-doas cp console.gif footer.html "${HTDOCS}/"
-doas rm -rf ${ASIDDB} && doas mkdir ${ASIDDB} && doas chown www ${ASIDDB}
+doas cp console.gif "${HTDOCS}/"
 
-install html.pl ${HTMLWRITER}
-install json.pl ${JSONWRITER}
 install asid.pl ${ASIDWRITER}
 
 prep_vp() {
@@ -61,68 +51,36 @@ prep_vp json
 
 cd ${CACHEDIR}/
 
-find * -type d | (cd ${HTDOCS}; xargs doas -u www mkdir -p)
-find * -type f | sort | tee ${FILELIST} | xargs sha256 -r | sort > ${HASHFILELIST}
+find * -type d | (cd ${HTDOCS} && xargs doas -u www mkdir -p)
 
-(cd ${HTDOCS};
-	find . -type f -not -name 'lost+found' \
-		-not -name '*.html' \
-		-not -name '*.json' \
-		-not -name 'index.*' \
-		-not -name '*.gz' \
-		-not -name '*.csv' \
-		-not -name '*.gif') \
-	| sed -e 's,^\./,,' | sort | uniq > ${ALLFILES}
+find * -type f \
+	| parallel -m "rpki-client -d ${CACHEDIR} -jf {} | jq -c ." \
+	| doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/zero
+echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat ${HTDOCS}/dump.json.tmp | wc -l)'}' \
+	| doas -u www tee -a ${HTDOCS}/dump.json.tmp
 
-comm -1 -3 ${FILELIST} ${ALLFILES} | sort > ${INVALIDFILELIST}
+doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
+doas -u www gzip -fkS tmp ${HTDOCS}/dump.json
+doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.gz
 
-(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs sha256 -r) | sort > ${INVALIDHASHFILELIST}
+pv ${HTDOCS}/dump.json \
+	| egrep '"router_key"|"roa"|"aspa"' \
+	| doas -u _rpki-client "${ASIDWRITER}" "${CACHEDIR}"
 
-if [ -f ${HTDOCS}/index.SHA256 ]; then
-	comm -2 -3 ${HASHFILELIST} ${HTDOCS}/index.SHA256 | awk '{print $2}' > ${DIFFLIST}
-	fgrep .mft ${DIFFLIST} | xargs -n1 dirname | xargs -J % find % -type f > ${DIFFLIST}.tmp
-	cat ${DIFFLIST}.tmp | sort | uniq > ${DIFFLIST} && rm ${DIFFLIST}.tmp
-	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-	(cat ${DIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
-else
-	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-	(cat ${FILELIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
-fi
-wait
+doas rsync -xrtO --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
+doas -u _rpki-client rm -rf "${ASIDDB}"
 
-if [ -f ${HTDOCS}/index.old.SHA256 ]; then
-	comm -2 -3 ${INVALIDHASHFILELIST} ${HTDOCS}/index.old.SHA256 | awk '{print $2}' | sort > ${INVALIDDIFFLIST}
-	(cd ${HTDOCS}; cat ${INVALIDDIFFLIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-	(cd ${HTDOCS}; cat ${INVALIDDIFFLIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
-else
-	(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs rpki-client -d ${CACHEDIR} -vvf | doas -u www ${HTMLWRITER}) &
-	(cd ${HTDOCS}; cat ${INVALIDFILELIST} | xargs rpki-client -d ${CACHEDIR} -jf | doas -u www ${JSONWRITER}) &
-fi
-wait
+doas rsync -xrtO --chown www --exclude=.rsync --exclude=.rrdp --exclude=.ta --info=progress2 "${CACHEDIR}/" "${HTDOCS}/"
 
-# while in cachedir
-doas rsync -xrt --chown www --exclude=.rsync --exclude=.rrdp --info=progress2 ${CACHEDIR}/ ${HTDOCS}/
+cd "${HTDOCS}/"
 
-cd ${HTDOCS}/
-
-cat ${FILELIST} | sed 's/$/.json/' | xargs cat | jq -c '.' | doas -u www tee dump.json.tmp | egrep '"router_key"|"roa"|"aspa"' | doas -u www ${ASIDWRITER}
-echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat dump.json.tmp | wc -l)'}' | \
-	doas -u www tee -a dump.json.tmp
-
-doas -u www mv dump.json.tmp dump.json
-doas -u www gzip -fkS tmp dump.json
-doas -u www mv dump.json.tmp dump.json.gz
-
-doas install -m 644 -o www ${HASHFILELIST} ${HTDOCS}/index.SHA256
-doas install -m 644 -o www ${INVALIDHASHFILELIST} ${HTDOCS}/index.old.SHA256
-
-doas rsync -xrt --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
-
-sed 1d ${OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero
-sed 1d ${RSYNC_OUTDIR}/csv | sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rsync-only.csv > /dev/zero
+sed 1d ${OUTDIR}/csv \
+	| sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rrdp-rsync.csv > /dev/zero
+sed 1d ${RSYNC_OUTDIR}/csv \
+	| sed 's/,[0-9]*$//' | sort | doas -u www tee vrps-rsync-only.csv > /dev/zero
 
 # make the pretty index page
-doas -u www tee index.html > /dev/zero << EOF
+doas -u www tee index.htm > /dev/zero << EOF
 <img border=0 src="/console.gif" />
 <br />
 <pre>
@@ -158,13 +116,10 @@ $(wc -l vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 $(comm -3 vrps-rrdp-rsync.csv vrps-rsync-only.csv)
 </pre>
 <br />
-<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>$(cat footer.html).</i>
+<i>Generated at $(date) by <a href="https://www.rpki-client.org/">rpki-client</a>.</i>
 <br />
 <i>Contact: job@openbsd.org</i>
 EOF
 
 # cleanup
 rm -rf "${WD}"
-rm "${HTMLWRITER}" "${JSONWRITER}" "${ASIDWRITER}"
-doas rm -rf "${ASIDDB}"
-cd -

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -ev
+set -euxo pipefail
 
 cd /home/job/console.rpki-client.org
 
