@@ -4,6 +4,8 @@ set -euxo pipefail
 
 cd /home/job/console.rpki-client.org
 
+doas make
+
 while true; do
         time ./go.sh 2>&1 | ts
         date
