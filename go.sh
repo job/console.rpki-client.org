@@ -51,11 +51,13 @@ prep_vp json
 
 cd ${CACHEDIR}/
 
-find * -type d | (cd ${HTDOCS} && xargs doas -u www mkdir -p)
-
 find * -type f \
 	| parallel -m "rpki-client -d ${CACHEDIR} -jf {} | jq -c ." \
-	| doas -u www tee ${HTDOCS}/dump.json.tmp > /dev/zero
+	| pv \
+	| doas -u www tee ${HTDOCS}/dump.json.tmp \
+	| egrep '"router_key"|"roa"|"aspa"' \
+	| doas -u _rpki-client "${ASIDWRITER}" "${CACHEDIR}"
+
 echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y-%m-%dT%H:%M:%SZ)'","objects":'$(cat ${HTDOCS}/dump.json.tmp | wc -l)'}' \
 	| doas -u www tee -a ${HTDOCS}/dump.json.tmp
 
@@ -63,14 +65,10 @@ doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
 doas -u www gzip -fkS tmp ${HTDOCS}/dump.json
 doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.gz
 
-pv ${HTDOCS}/dump.json \
-	| egrep '"router_key"|"roa"|"aspa"' \
-	| doas -u _rpki-client "${ASIDWRITER}" "${CACHEDIR}"
-
-doas rsync -xrtO --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
+doas rsync -xrtOW --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 doas -u _rpki-client rm -rf "${ASIDDB}"
 
-doas rsync -xrtO --chown www --exclude=.rsync --exclude=.rrdp --exclude=.ta --info=progress2 "${CACHEDIR}/" "${HTDOCS}/"
+doas rsync -xrtOW --stats --chown www --exclude=.rsync --exclude=.rrdp --exclude=.ta --info=progress2 "${CACHEDIR}/" "${HTDOCS}/"
 
 cd "${HTDOCS}/"
 

@@ -87,6 +87,10 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		$_ =~ s|($1)|<strong><font color=green>$1</font></strong>|;
 	}
 
+	if (/^Certificate:/) {
+		print "\n";
+	}
+
 	print $_;
 }
 

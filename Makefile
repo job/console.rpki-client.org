@@ -1,5 +1,5 @@
 all:
-	cd /var/www && mkdir -p {bin,etc,usr/lib,usr/libexec,usr/libdata/perl5}
+	cd /var/www && mkdir -p {bin,etc/rpki,usr/lib,usr/libexec,usr/libdata/perl5}
 	install /etc/rpki/{afrinic,apnic,arin,lacnic,ripe}.{tal,constraints} /var/www/etc/rpki/
 	install rpki.pl /var/www/cgi-bin/
 	install /usr/sbin/rpki-client /usr/bin/perl /var/www/bin/
