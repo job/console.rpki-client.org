@@ -59,7 +59,7 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		elsif ($type eq ".tak") { print "Trust Anchor Key"; }
 		print "</h3>\n<pre>\n";
 		print '$ <strong>rpki-client -vvf ' . $path . $name . $type . "</strong>\n";
-		$_ =~ s|($1)$|$name$type (<a href="$name$type">raw</a>, <a href="$name$type.json">json</a>)|;
+		$_ =~ s|(\Q$1\E)$|$name$type (<a href="$name$type">raw</a>, <a href="$name$type.json">json</a>)|;
 	}
 
 	if (/rsync:\/\/(.*)$/ and /[a-z]$/) {
@@ -68,13 +68,11 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		$_ =~ s|rsync://(.*)$|rsync://<a href="/$1">$1</a>|;
 	}
 
-	if ($type eq ".roa" and /^asID: +(.*)$/) {
+	if ($type eq ".roa" and /^asID: +([0-9]+)$/) {
 		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
-	}
-	elsif ($type eq ".asa" and /^Customer AS: +(.*)$/) {
+	} elsif ($type eq ".asa" and /^Customer AS: +([0-9]+)$/) {
 		$_ =~ s|($1)$|<a href="/AS$1.html">$1</a>|;
-	}
-	elsif ($type eq ".mft") {
+	} elsif ($type eq ".mft") {
 		if (/^.*[0-9]: ([^ ]+) \(hash: .*/) {
 			$_ =~ s|($1)|<a href="$1.html">$1</a>|;
 		}
