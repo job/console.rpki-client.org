@@ -80,11 +80,10 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		}
 	}
 
-	if (/^Validation:\s+(Failed.*)$/) {
-		$_ =~ s|($1)|<strong><font color=red>$1</font></strong>|;
-	}
-	elsif (/^Validation:\s+(OK)$/) {
-		$_ =~ s|($1)|<strong><font color=green>$1</font></strong>|;
+	if (/^Validation:\s+(OK)$/) {
+		$_ =~ s|(\Q$1\E)|<strong><font color=green>$1</font></strong>|;
+	} elsif (/^Validation:\s+(Failed.*)$/) {
+		$_ =~ s|(\Q$1\E)|<strong><font color=red>$1</font></strong>|;
 	}
 
 	if (/^Certificate:/) {
