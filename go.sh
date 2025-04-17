@@ -28,6 +28,7 @@ chmod +rx "${WD}"
 LOG_RRDP="$(mktemp -p ${WD} rrdplog.XXXXXXXXXX)"
 LOG_RSYNC="$(mktemp -p ${WD} rsynclog.XXXXXXXXXX)"
 ASIDWRITER="$(mktemp -p ${WD} asid.XXXXXXXXXX)"
+BROKENCAS="$(mktemp -p ${WD} brokencas.XXXXXXXXXX)"
 
 # run the RRDP+rsync and rsync-only instances
 (doas rpki-client -coj    -d ${CACHEDIR}       ${OUTDIR}       2>&1 | ts > ${LOG_RRDP})  &
@@ -37,6 +38,7 @@ wait
 doas cp console.gif "${HTDOCS}/"
 
 install asid.pl ${ASIDWRITER}
+install nonfunc_ca.py ${BROKENCAS}
 
 prep_vp() {
 	doas install -m 644 -o www ${OUTDIR}/$1 ${HTDOCS}/rpki.$1
@@ -53,7 +55,6 @@ cd ${CACHEDIR}/
 
 find * -type f \
 	| parallel -m "rpki-client -d ${CACHEDIR} -jf {} | jq -c ." \
-	| pv \
 	| doas -u www tee ${HTDOCS}/dump.json.tmp \
 	| egrep '"router_key"|"roa"|"aspa"' \
 	| doas -u _rpki-client "${ASIDWRITER}" "${CACHEDIR}"
@@ -64,6 +65,21 @@ echo '{"type":"metadata","buildmachine":"'$(hostname)'","buildtime":"'$(date +%Y
 doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json
 doas -u www gzip -fkS tmp ${HTDOCS}/dump.json
 doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.gz
+
+${BROKENCAS}
+doas -u www install /tmp/ca_state_v2.txt ${HTDOCS}/ca_state.txt
+(
+echo '<img border=0 src="/console.gif" /><br />'
+echo "<h3>Non-functional RPKI Certification Authorities</h3><br /><br />"
+sort -k2 -n ${HTDOCS}/ca_state.txt | while read -r f1 f2 f3 f4; do
+	echo "<hr /><pre id='${f1}'>"
+	echo "<strong>Non-functional since:     $(date -r ${f2})</strong>";
+	rpki-client -f -- "rsync://${f1}";
+	echo '</pre>'
+done
+echo "<br /><hr /><i>Generated at $(date).</i><br />"
+) | doas -u www tee ${HTDOCS}/nonfunc.tmp
+doas -u www mv ${HTDOCS}/nonfunc.tmp ${HTDOCS}/nonfunc.html
 
 doas rsync -xrtOW --chown www --info=progress2 ${ASIDDB}/ ${HTDOCS}/
 doas -u _rpki-client rm -rf "${ASIDDB}"
@@ -89,7 +105,7 @@ Archived full copies of the global RPKI: <a href="https://www.rpkiviews.org/">rp
 For example, you can view all VRPs related to AS 8283 at <a href="/AS8283.html">/AS8283.html</a>.
 You can substitute the digits in the above URL with any ASN referenced as asID.
 
-Listings of all currently valid <a href="/aspa.html">ASPA</a> objects and <a href="/bgpsec.html">BGPSec</a> router keys.
+Listings of all currently valid <a href="/aspa.html">ASPA</a> objects and <a href="/bgpsec.html">BGPSec</a> router keys, and <a href="/nonfunc.html">non-functional CAs</a>.
 
 Trust Anchors:
 <a href="/ta/afrinic/AfriNIC.cer.html">/ta/afrinic/AfriNIC.cer</a>
