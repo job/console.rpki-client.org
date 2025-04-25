@@ -69,8 +69,13 @@ doas -u www mv ${HTDOCS}/dump.json.tmp ${HTDOCS}/dump.json.gz
 ${BROKENCAS}
 doas -u www install /tmp/ca_state_v2.txt ${HTDOCS}/ca_state.txt
 (
-echo '<img border=0 src="/console.gif" /><br />'
-echo "<h3>Non-functional RPKI Certification Authorities</h3><br /><br />"
+cat << EOF
+<img border=0 src="/console.gif" /><br />
+<h3>Non-functional RPKI Certification Authorities</h3><br /><br />
+This information is made available to facilitate deliberations on whether persistently non-functional CAs should be revoked by RIRs.<br />
+For more information see <a href="https://mailman.ripe.net/archives/list/routing-wg@ripe.net/thread/USQUMNOE3L3UUD3JZVI6LH7VMDRPL7K4/">this thread</a>.<br />
+EOF
+
 sort -k2 -n ${HTDOCS}/ca_state.txt | while read -r f1 f2 f3 f4; do
 	echo "<hr /><pre id='${f1}'>"
 	echo "<strong>Non-functional since:     $(date -r ${f2})</strong>";
