@@ -53,7 +53,6 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		if    ($type eq ".mft") { print "Manifest"; }
 		elsif ($type eq ".roa") { print "Route Origin Authorization"; }
 		elsif ($type eq ".crl") { print "Certificate Revocation List"; }
-		elsif ($type eq ".gbr") { print "Ghostbusters Record"; }
 		elsif ($type eq ".asa") { print "Autonomous System Provider Authorization"; }
 		elsif ($type eq ".cer") { print "Certificate"; }
 		elsif ($type eq ".tak") { print "Trust Anchor Key"; }
