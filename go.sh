@@ -70,10 +70,10 @@ ${BROKENCAS}
 doas -u www install /tmp/ca_state_v2.txt ${HTDOCS}/ca_state.txt
 (
 cat << EOF
+<html><head><title>The RPKI Console - Non-functional RPKI Certification Authorities</title></head><body>
 <img border=0 src="/console.gif" /><br />
 <h3>Non-functional RPKI Certification Authorities</h3><br /><br />
-This information is made available to facilitate deliberations on whether persistently non-functional CAs should be revoked by RIRs.<br />
-For more information see <a href="https://mailman.ripe.net/archives/list/routing-wg@ripe.net/thread/USQUMNOE3L3UUD3JZVI6LH7VMDRPL7K4/">this thread</a>.<br />
+This information is made available to facilitate deliberations on whether persistently non-functional CAs should be revoked by RIRs (<a href="https://www.apnic.net/community/policy/proposals/prop-166/">APNIC prop-166</a>, <a href="https://www.ripe.net/publications/docs/ripe-847/">RIPE-847</a>).<br />
 EOF
 
 sort -k2 -n ${HTDOCS}/ca_state.txt | while read -r f1 f2 f3 f4; do
@@ -100,10 +100,11 @@ sed 1d ${RSYNC_OUTDIR}/csv \
 
 # make the pretty index page
 doas -u www tee index.htm > /dev/zero << EOF
+<html><head><title>The RPKI Console</title></head><body>
 <img border=0 src="/console.gif" />
 <br />
 <pre>
-All validated RPKI payloads observed by this instance are available in <a href="/rpki.csv">csv</a> and <a href="/rpki.json">json</a> format.
+All validated RPKI payloads observed by this instance are available in <a href="/rpki.csv">csv</a>, <a href="/rpki.json">json</a>, and <a href="/rpki.ccr">CCR</a> format.
 A full JSON dump of all currently observed objects in the RPKI: <a href="/dump.json">dump.json</a> (<a href="/dump.json.gz">gzipped</a>).
 Archived full copies of the global RPKI: <a href="https://www.rpkiviews.org/">rpkiviews.org</a>.
 
