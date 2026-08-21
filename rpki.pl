@@ -62,7 +62,7 @@ foreach (`/bin/rpki-client -d . -vvvf '$obj' 2>&1`) {
 	}
 
 	if (/^rpki-client: /) {
-		$_ =~ s|rpki-client: (.*)$|<strong><font color=red>Error: $1</font></strong><br />|;
+		$_ =~ s|rpki-client: (.*)$|<strong><font color=red><code>Error: $1</code></font></strong><br />|;
 	}
 
 	if (/rsync:\/\/(.*)$/ and /[a-z]$/) {
