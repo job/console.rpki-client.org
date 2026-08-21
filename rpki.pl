@@ -47,7 +47,7 @@ print "Content-Type: text/html;\n\n";
 
 print "<img border=0 src='/console.gif' /><br />\n";
 
-foreach (`/bin/rpki-client -d . -vvvf '$obj'`) {
+foreach (`/bin/rpki-client -d . -vvvf '$obj' 2>&1`) {
 	if (/^File: +(.*)$/) {
 		print "<h3>";
 		if    ($type eq ".mft") { print "Manifest"; }
@@ -59,6 +59,10 @@ foreach (`/bin/rpki-client -d . -vvvf '$obj'`) {
 		print "</h3>\n<pre>\n";
 		print '$ <strong>rpki-client -vvvf ' . $path . $name . $type . "</strong>\n";
 		$_ =~ s|(\Q$1\E)$|$name$type (<a href="$name$type">raw</a>, <a href="$name$type.json">json</a>)|;
+	}
+
+	if (/^rpki-client: /) {
+		$_ =~ s|rpki-client: (.*)$|<strong><font color=red>Error: $1</font></strong><br />|;
 	}
 
 	if (/rsync:\/\/(.*)$/ and /[a-z]$/) {
