@@ -47,7 +47,7 @@ print "Content-Type: text/html;\n\n";
 
 print "<img border=0 src='/console.gif' /><br />\n";
 
-foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
+foreach (`/bin/rpki-client -d . -vvvf '$obj'`) {
 	if (/^File: +(.*)$/) {
 		print "<h3>";
 		if    ($type eq ".mft") { print "Manifest"; }
@@ -57,7 +57,7 @@ foreach (`/bin/rpki-client -d . -vvf '$obj'`) {
 		elsif ($type eq ".cer") { print "Certificate"; }
 		elsif ($type eq ".tak") { print "Trust Anchor Key"; }
 		print "</h3>\n<pre>\n";
-		print '$ <strong>rpki-client -vvf ' . $path . $name . $type . "</strong>\n";
+		print '$ <strong>rpki-client -vvvf ' . $path . $name . $type . "</strong>\n";
 		$_ =~ s|(\Q$1\E)$|$name$type (<a href="$name$type">raw</a>, <a href="$name$type.json">json</a>)|;
 	}
 
